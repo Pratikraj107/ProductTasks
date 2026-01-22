@@ -46,6 +46,11 @@ if PRODUCTION_DOMAIN:
         f"http://www.{PRODUCTION_DOMAIN}"
     ])
 
+# Add Railway frontend domain if provided
+RAILWAY_FRONTEND = os.getenv("RAILWAY_FRONTEND_DOMAIN", "")
+if RAILWAY_FRONTEND:
+    ALLOWED_ORIGINS.append(RAILWAY_FRONTEND)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
