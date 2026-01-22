@@ -93,7 +93,9 @@ async def root():
 async def health_check():
     return {
         "status": "healthy",
-        "agent_ready": agent_initialized
+        "agent_ready": interview_agent_initialized,
+        "resume_agent_ready": agent_initialized,
+        "interview_agent_ready": interview_agent_initialized
     }
 
 @app.post("/api/resume/review")
