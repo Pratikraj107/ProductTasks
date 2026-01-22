@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for HTML content in dark theme */
+.prose-invert {
+  --tw-prose-body: rgb(203 213 225); /* slate-300 */
+  --tw-prose-headings: rgb(255 255 255); /* white */
+  --tw-prose-lead: rgb(148 163 184); /* slate-400 */
+  --tw-prose-links: rgb(34 211 238); /* cyan-400 */
+  --tw-prose-bold: rgb(255 255 255); /* white */
+  --tw-prose-counters: rgb(148 163 184); /* slate-400 */
+  --tw-prose-bullets: rgb(71 85 105); /* slate-600 */
+  --tw-prose-hr: rgb(51 65 85); /* slate-700 */
+  --tw-prose-quotes: rgb(203 213 225); /* slate-300 */
+  --tw-prose-quote-borders: rgb(51 65 85); /* slate-700 */
+  --tw-prose-captions: rgb(148 163 184); /* slate-400 */
+  --tw-prose-code: rgb(255 255 255); /* white */
+  --tw-prose-pre-code: rgb(203 213 225); /* slate-300 */
+  --tw-prose-pre-bg: rgb(15 23 42); /* slate-900 */
+  --tw-prose-th-borders: rgb(51 65 85); /* slate-700 */
+  --tw-prose-td-borders: rgb(51 65 85); /* slate-700 */
+}
+
+/* Ensure proper spacing and styling for HTML content */
+.prose-invert h1,
+.prose-invert h2,
+.prose-invert h3,
+.prose-invert h4,
+.prose-invert h5,
+.prose-invert h6 {
+  color: rgb(255 255 255);
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.prose-invert h1 {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+}
+
+.prose-invert h2 {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+.prose-invert h3 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.prose-invert p {
+  margin-bottom: 1.25rem;
+  line-height: 1.75;
+}
+
+.prose-invert ul,
+.prose-invert ol {
+  margin-bottom: 1.25rem;
+  padding-left: 1.5rem;
+}
+
+.prose-invert li {
+  margin-bottom: 0.5rem;
+}
+
+.prose-invert strong {
+  color: rgb(255 255 255);
+  font-weight: 700;
+}
+
+.prose-invert a {
+  color: rgb(34 211 238);
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.prose-invert a:hover {
+  color: rgb(6 182 212);
+}
+
+.prose-invert code {
+  background-color: rgb(15 23 42);
+  color: rgb(34 211 238);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.prose-invert pre {
+  background-color: rgb(15 23 42);
+  color: rgb(203 213 225);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 1.25rem;
+}
+
+.prose-invert blockquote {
+  border-left: 4px solid rgb(51 65 85);
+  padding-left: 1rem;
+  margin: 1.25rem 0;
+  font-style: italic;
+  color: rgb(148 163 184);
+}
+
+/* Additional styling for better HTML content display */
+.prose-invert img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.prose-invert table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+}
+
+.prose-invert th,
+.prose-invert td {
+  border: 1px solid rgb(51 65 85);
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.prose-invert th {
+  background-color: rgb(15 23 42);
+  font-weight: 600;
+  color: rgb(255 255 255);
+}
+
+.prose-invert td {
+  background-color: rgb(30 41 59);
+  color: rgb(203 213 225);
+}
+
+.prose-invert hr {
+  border: none;
+  border-top: 1px solid rgb(51 65 85);
+  margin: 2rem 0;
+}
+
+/* Custom scrollbar styles */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgb(15 23 42);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgb(34 211 238 / 0.3);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgb(34 211 238 / 0.5);
+}
