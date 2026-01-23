@@ -22,7 +22,22 @@ class InterviewFeedbackAgent:
         if not api_key:
             raise ValueError("OPENAI_API_KEY not found in environment variables")
         
-        self.openai_client = OpenAI(api_key=api_key)
+        # Initialize OpenAI client
+        # Railway might set proxy environment variables that the OpenAI client tries to use
+        # We need to explicitly disable proxy usage or handle it properly
+        try:
+            # Try standard initialization first
+            self.openai_client = OpenAI(api_key=api_key)
+        except (TypeError, ValueError) as e:
+            # If that fails due to proxy issues, try with explicit http_client configuration
+            # This bypasses any automatic proxy detection
+            import httpx
+            http_client = httpx.Client(timeout=60.0)
+            self.openai_client = OpenAI(
+                api_key=api_key,
+                http_client=http_client
+            )
+        
         self.model = "gpt-4o-mini"
     
     async def transcribe_audio(self, audio_file_path: str) -> str:
