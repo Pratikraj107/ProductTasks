@@ -11,10 +11,13 @@ import {
   Moon,
   Sun,
   Wrench,
-  FileText
+  FileText,
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useInterviewUsage } from '../hooks/useInterviewUsage';
 
 interface SidebarProps {
   currentPage: string;
@@ -25,7 +28,9 @@ interface SidebarProps {
 
 export default function Sidebar({ currentPage, onNavigate, isCollapsed = false, onExternalNavigate }: SidebarProps) {
   const { signOut, user } = useAuth();
+  const { usageStatus } = useInterviewUsage();
   // const { isDark, toggleTheme } = useTheme();
+  const isFreeUser = !usageStatus || usageStatus.plan_type === 'free';
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -91,7 +96,34 @@ export default function Sidebar({ currentPage, onNavigate, isCollapsed = false, 
           <div className="mb-4 px-4 py-3 bg-slate-100 dark:bg-slate-800/50 rounded-lg">
             <p className="text-xs text-slate-600 dark:text-slate-500 mb-1">Signed in as</p>
             <p className="text-sm text-slate-900 dark:text-white truncate">{user?.email}</p>
+            {usageStatus && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 capitalize">
+                {usageStatus.plan_type} Plan
+              </p>
+            )}
           </div>
+          
+          {isFreeUser && (
+            <button
+              onClick={() => {
+                if (onExternalNavigate) {
+                  onExternalNavigate('/');
+                  // Set hash after navigation completes
+                  setTimeout(() => {
+                    window.location.hash = 'pricing';
+                  }, 200);
+                } else {
+                  window.location.href = '/#pricing';
+                }
+              }}
+              className="w-full mb-3 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold hover:from-yellow-600 hover:to-orange-600 transition-all duration-200 shadow-lg"
+            >
+              <Zap className="w-4 h-4" />
+              <span>Upgrade to Pro</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+          
           <button
             onClick={signOut}
             className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-500/10 transition-all duration-200"

@@ -1,8 +1,11 @@
-import { User, Mail, Calendar, Award, Edit2, Shield } from 'lucide-react';
+import { User, Mail, Calendar, Award, Edit2, Shield, Zap, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useInterviewUsage } from '../hooks/useInterviewUsage';
 
 export default function Profile() {
   const { user } = useAuth();
+  const { usageStatus } = useInterviewUsage();
+  const isFreeUser = !usageStatus || usageStatus.plan_type === 'free';
 
   const achievements = [
     { title: 'Early Adopter', description: 'Joined ProductTasks', icon: '🚀', earned: true },
@@ -66,12 +69,25 @@ export default function Profile() {
                   <Shield className="w-5 h-5 text-cyan-400" />
                   <div className="flex-1">
                     <p className="text-slate-400 text-xs">Account Type</p>
-                    <p className="text-white text-sm">Free</p>
+                    <p className="text-white text-sm capitalize">{usageStatus?.plan_type || 'Free'}</p>
                   </div>
                 </div>
               </div>
 
-              <button className="w-full mt-6 bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all flex items-center justify-center space-x-2">
+              {isFreeUser && (
+                <button
+                  onClick={() => {
+                    window.location.href = '/#pricing';
+                  }}
+                  className="w-full mt-6 bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-3 rounded-lg font-bold hover:from-yellow-600 hover:to-orange-600 transition-all flex items-center justify-center space-x-2 shadow-lg"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>Upgrade to Pro</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+
+              <button className="w-full mt-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all flex items-center justify-center space-x-2">
                 <Edit2 className="w-4 h-4" />
                 <span>Edit Profile</span>
               </button>

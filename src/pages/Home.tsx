@@ -40,6 +40,50 @@ export default function Home({ onNavigate }: HomeProps) {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  // Handle scrolling to pricing section when hash is present
+  useEffect(() => {
+    const scrollToPricing = () => {
+      // Try multiple times with increasing delays to ensure element is rendered
+      const attempts = [100, 300, 500, 1000];
+      attempts.forEach((delay) => {
+        setTimeout(() => {
+          const pricingSection = document.getElementById('pricing');
+          if (pricingSection) {
+            const yOffset = -80; // Offset for fixed header if any
+            const y = pricingSection.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+          }
+        }, delay);
+      });
+    };
+
+    // Check on mount and after a delay
+    if (window.location.hash === '#pricing') {
+      scrollToPricing();
+    }
+
+    // Listen for hash changes
+    const handleHashChange = () => {
+      if (window.location.hash === '#pricing') {
+        scrollToPricing();
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    
+    // Also check after component mounts (in case hash was set before render)
+    const checkHash = setTimeout(() => {
+      if (window.location.hash === '#pricing') {
+        scrollToPricing();
+      }
+    }, 500);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      clearTimeout(checkHash);
+    };
+  }, []);
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -410,7 +454,35 @@ export default function Home({ onNavigate }: HomeProps) {
                   </ul>
 
                   <button
-                    onClick={() => onNavigate?.('/signup')}
+                    onClick={() => {
+                      if (plan.name === 'Free') {
+                        onNavigate?.('/signup');
+                      } else if (plan.name === 'Monthly') {
+                        // Check if user is logged in
+                        if (!user) {
+                          onNavigate?.('/signup');
+                          return;
+                        }
+                        setSelectedPlan({
+                          type: 'monthly',
+                          amount: 80000, // ₹800 in paise
+                          display: '₹800'
+                        });
+                        setPaymentModalOpen(true);
+                      } else if (plan.name === 'Yearly') {
+                        // Check if user is logged in
+                        if (!user) {
+                          onNavigate?.('/signup');
+                          return;
+                        }
+                        setSelectedPlan({
+                          type: 'yearly',
+                          amount: 600000, // ₹6000 in paise
+                          display: '₹6,000'
+                        });
+                        setPaymentModalOpen(true);
+                      }
+                    }}
                     className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 ${
                       plan.popular
                         ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700'
