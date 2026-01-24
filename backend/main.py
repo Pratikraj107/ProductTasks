@@ -23,6 +23,14 @@ except Exception as e:
     print(f"Warning: Payments not available: {e}")
     PAYMENTS_AVAILABLE = False
 
+# Import question answers router
+try:
+    from api.question_answers import router as answers_router
+    ANSWERS_AVAILABLE = True
+except Exception as e:
+    print(f"Warning: Question answers not available: {e}")
+    ANSWERS_AVAILABLE = False
+
 # Try to import ResumeReviewAgent, but don't fail if it's not available
 try:
     from agents.resume_reviewer import ResumeReviewAgent
@@ -105,6 +113,10 @@ if USAGE_TRACKER_AVAILABLE:
 # Include payments router if available
 if PAYMENTS_AVAILABLE:
     app.include_router(payments_router)
+
+# Include question answers router if available
+if ANSWERS_AVAILABLE:
+    app.include_router(answers_router)
 
 @app.get("/")
 async def root():

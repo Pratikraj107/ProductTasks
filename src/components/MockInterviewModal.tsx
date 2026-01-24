@@ -3,6 +3,8 @@ import { X, Mic, MicOff, Pause, Play, RotateCcw, Check, Loader, MessageSquare } 
 
 interface MockInterviewModalProps {
   question: string;
+  questionId?: number;
+  questionIndex?: number;
   onClose: () => void;
   onInterviewComplete?: () => void; // Callback when interview is completed (for usage tracking)
 }
@@ -47,13 +49,15 @@ interface FeedbackData {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
-export default function MockInterviewModal({ question, onClose, onInterviewComplete }: MockInterviewModalProps) {
+export default function MockInterviewModal({ question, questionId, questionIndex, onClose, onInterviewComplete }: MockInterviewModalProps) {
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [transcript, setTranscript] = useState('');
   const [editedTranscript, setEditedTranscript] = useState('');
   const [timer, setTimer] = useState(0);
   const [feedback, setFeedback] = useState<FeedbackData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [generatedAnswer, setGeneratedAnswer] = useState<string | null>(null);
+  const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -290,6 +294,7 @@ export default function MockInterviewModal({ question, onClose, onInterviewCompl
     setTimer(0);
     setError(null);
     setRecordingState('idle');
+    setGeneratedAnswer(null);
     audioChunksRef.current = [];
   };
 
@@ -539,13 +544,34 @@ export default function MockInterviewModal({ question, onClose, onInterviewCompl
             <div className="space-y-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-2xl font-bold text-white">AI Feedback</h3>
-                <button
-                  onClick={handleReRecord}
-                  className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold transition-all"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>Try Again</span>
-                </button>
+                <div className="flex items-center space-x-3">
+                  {questionId && questionIndex !== undefined && (
+                    <button
+                      onClick={generateAnswer}
+                      disabled={isGeneratingAnswer}
+                      className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isGeneratingAnswer ? (
+                        <>
+                          <Loader className="w-4 h-4 animate-spin" />
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <MessageSquare className="w-4 h-4" />
+                          <span>Generate Answer</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <button
+                    onClick={handleReRecord}
+                    className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold transition-all"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Try Again</span>
+                  </button>
+                </div>
               </div>
 
               {/* Overall Score */}
@@ -694,6 +720,19 @@ export default function MockInterviewModal({ question, onClose, onInterviewCompl
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* Generated Answer Section */}
+              {generatedAnswer && (
+                <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 backdrop-blur-xl rounded-xl p-6 border border-green-500/30">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-xl font-bold text-white">Ideal Answer</h4>
+                    <Check className="w-5 h-5 text-green-400" />
+                  </div>
+                  <div className="prose prose-invert max-w-none">
+                    <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{generatedAnswer}</p>
+                  </div>
                 </div>
               )}
             </div>

@@ -12,6 +12,7 @@ interface ParsedQuestion {
   answers: string[];
   questionId: number;
   questionIndex: number;
+  savedAnswer?: string | null;
 }
 
 interface CategoryData {
@@ -38,6 +39,8 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
   const [loading, setLoading] = useState(true);
   const [usageError, setUsageError] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [answersMap, setAnswersMap] = useState<Map<string, string>>(new Map());
+  const [expandedAnswers, setExpandedAnswers] = useState<Set<string>>(new Set());
   const [mockInterviewState, setMockInterviewState] = useState<MockInterviewState>({
     isOpen: false,
     question: '',
@@ -79,6 +82,37 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
 
     fetchQuestions();
   }, []);
+
+  // Fetch answers for questions when they change
+  useEffect(() => {
+    const fetchAnswers = async () => {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+      const newAnswersMap = new Map<string, string>();
+
+      for (const category of questions) {
+        for (const item of category.items) {
+          const key = `${item.questionId}_${item.questionIndex}`;
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/answers/${item.questionId}/${item.questionIndex}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.exists && data.answer) {
+                newAnswersMap.set(key, data.answer);
+              }
+            }
+          } catch (error) {
+            // Silently fail - answers are optional
+          }
+        }
+      }
+
+      setAnswersMap(newAnswersMap);
+    };
+
+    if (questions.length > 0) {
+      fetchAnswers();
+    }
+  }, [questions]);
 
   const organizeQuestionsByTopic = (rawQuestions: InterviewQuestion[]): CategoryData[] => {
     const topicMap = new Map<string, ParsedQuestion[]>();
@@ -250,6 +284,10 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
 
               <div className="space-y-3">
                 {category.items.slice(0, 3).map((item, itemIndex) => {
+                  const answerKey = `${item.questionId}_${item.questionIndex}`;
+                  const savedAnswer = answersMap.get(answerKey);
+                  const isExpanded = expandedAnswers.has(answerKey);
+
                   return (
                     <div
                       key={itemIndex}
@@ -257,14 +295,39 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
                     >
                       <div className="p-5">
                         <p className="text-white font-semibold mb-4 pr-4">{item.question}</p>
-                        {user && (
-                          <button
-                            onClick={() => openMockInterview(item.question, item.questionId, item.questionIndex)}
-                            className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold transition-all"
-                          >
-                            <Mic className="w-4 h-4" />
-                            <span>Try Now</span>
-                          </button>
+                        <div className="flex items-center space-x-3 flex-wrap gap-2">
+                          {user && (
+                            <button
+                              onClick={() => openMockInterview(item.question, item.questionId, item.questionIndex)}
+                              className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold transition-all"
+                            >
+                              <Mic className="w-4 h-4" />
+                              <span>Try Now</span>
+                            </button>
+                          )}
+                          {savedAnswer && (
+                            <button
+                              onClick={() => {
+                                const newExpanded = new Set(expandedAnswers);
+                                if (isExpanded) {
+                                  newExpanded.delete(answerKey);
+                                } else {
+                                  newExpanded.add(answerKey);
+                                }
+                                setExpandedAnswers(newExpanded);
+                              }}
+                              className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold transition-all"
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                              <span>{isExpanded ? 'Hide Answer' : 'View Answer'}</span>
+                            </button>
+                          )}
+                        </div>
+                        {isExpanded && savedAnswer && (
+                          <div className="mt-4 p-4 bg-slate-700/50 rounded-lg border border-green-500/30">
+                            <h4 className="text-green-400 font-semibold mb-2">Ideal Answer:</h4>
+                            <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{savedAnswer}</p>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -325,6 +388,8 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
       {mockInterviewState.isOpen && (
         <MockInterviewModal
           question={mockInterviewState.question}
+          questionId={mockInterviewState.questionId}
+          questionIndex={mockInterviewState.questionIndex}
           onClose={closeMockInterview}
           onInterviewComplete={async () => {
             await incrementUsage();

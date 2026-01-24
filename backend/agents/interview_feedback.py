@@ -226,3 +226,44 @@ Return ONLY valid JSON, no additional text or markdown formatting."""
                     "recommendations": []
                 }
             }
+    
+    async def generate_ideal_answer(self, question: str) -> str:
+        """
+        Generate an ideal/example answer for an interview question
+        """
+        answer_prompt = f"""You are an expert Product Management interview coach with 15+ years of experience at top tech companies (Google, Meta, Amazon, Microsoft, etc.).
+
+Generate a comprehensive, well-structured ideal answer for this Product Management interview question. The answer should:
+
+1. **Be Clear and Structured**: Use appropriate PM frameworks (CIRCLES, AARM, STAR, etc.) where relevant
+2. **Be Comprehensive**: Cover all aspects of the question thoroughly
+3. **Include Examples**: Provide concrete examples and real-world scenarios
+4. **Be Professional**: Use industry-standard terminology and best practices
+5. **Be Actionable**: Show how a senior PM would approach this question
+
+INTERVIEW QUESTION:
+{question}
+
+Provide a detailed, well-structured answer that demonstrates:
+- Strong product thinking
+- Clear communication
+- Use of relevant PM frameworks
+- Real-world examples
+- Strategic thinking
+- Technical understanding (if applicable)
+
+Format your answer as a clear, well-structured response that a candidate could use as a reference. Do not include any meta-commentary or explanations about the answer itself - just provide the ideal answer directly."""
+
+        messages = [
+            {"role": "system", "content": "You are an expert Product Management interview coach. Generate comprehensive, well-structured ideal answers for PM interview questions."},
+            {"role": "user", "content": answer_prompt}
+        ]
+        
+        response = self.openai_client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            temperature=0.7
+        )
+        answer = response.choices[0].message.content.strip()
+        
+        return answer
