@@ -1,8 +1,11 @@
-import { MessageSquare, ChevronDown, ChevronUp, Plus, X, Save, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquare, ArrowLeft, ChevronLeft, ChevronRight, Mic, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { InterviewQuestion } from '../lib/database.types';
+import MockInterviewModal from '../components/MockInterviewModal';
+import UpgradeModal from '../components/UpgradeModal';
+import { useInterviewUsage } from '../hooks/useInterviewUsage';
 
 interface ParsedQuestion {
   question: string;
@@ -11,11 +14,11 @@ interface ParsedQuestion {
   questionIndex: number;
 }
 
-interface AddAnswerState {
+interface MockInterviewState {
   isOpen: boolean;
+  question: string;
   questionId: number;
   questionIndex: number;
-  answer: string;
 }
 
 const QUESTIONS_PER_PAGE = 5;
@@ -27,17 +30,18 @@ interface CategoryDetailProps {
 
 export default function CategoryDetail({ category, onBack }: CategoryDetailProps) {
   const { user } = useAuth();
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const { usageStatus, checkUsage, incrementUsage, fetchUsageStatus } = useInterviewUsage();
   const [questions, setQuestions] = useState<ParsedQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [addAnswerState, setAddAnswerState] = useState<AddAnswerState>({
+  const [usageError, setUsageError] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [mockInterviewState, setMockInterviewState] = useState<MockInterviewState>({
     isOpen: false,
+    question: '',
     questionId: 0,
-    questionIndex: 0,
-    answer: ''
+    questionIndex: 0
   });
-  const [saving, setSaving] = useState(false);
 
   const categoryGradients = {
     'Product Design': 'from-blue-500 to-cyan-500',
@@ -108,66 +112,41 @@ export default function CategoryDetail({ category, onBack }: CategoryDetailProps
       .filter(q => q.length > 0);
   };
 
-  const openAddAnswer = (questionId: number, questionIndex: number) => {
-    setAddAnswerState({
-      isOpen: true,
-      questionId,
-      questionIndex,
-      answer: ''
-    });
-  };
-
-  const closeAddAnswer = () => {
-    setAddAnswerState({
-      isOpen: false,
-      questionId: 0,
-      questionIndex: 0,
-      answer: ''
-    });
-  };
-
-  const saveAnswer = async () => {
-    if (!user || !addAnswerState.answer.trim()) return;
-
-    setSaving(true);
-    try {
-      const currentQuestion = questions.find(item => item.questionId === addAnswerState.questionId);
-
-      if (!currentQuestion) {
-        console.error('Question not found');
-        return;
-      }
-
-      const updatedAnswers = [...currentQuestion.answers, addAnswerState.answer.trim()];
-
-      const { error } = await supabase
-        .from('interview_questions')
-        .update({ answer: updatedAnswers })
-        .eq('id', addAnswerState.questionId);
-
-      if (error) {
-        console.error('Error saving answer:', error);
-        return;
-      }
-
-      setQuestions(prevQuestions => 
-        prevQuestions.map(item => 
-          item.questionId === addAnswerState.questionId
-            ? { ...item, answers: updatedAnswers }
-            : item
-        )
-      );
-
-      closeAddAnswer();
-    } catch (error) {
-      console.error('Error saving answer:', error);
-    } finally {
-      setSaving(false);
+  const openMockInterview = async (question: string, questionId: number, questionIndex: number) => {
+    if (!user) {
+      setUsageError('Please sign in to use mock interviews');
+      return;
     }
+
+    // Check usage before opening
+    const usageCheck = await checkUsage();
+    if (!usageCheck) {
+      setUsageError('Unable to check usage limits. Please try again.');
+      return;
+    }
+
+    if (!usageCheck.can_proceed) {
+      // Show upgrade modal instead of error message
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    setUsageError(null);
+    setMockInterviewState({
+      isOpen: true,
+      question,
+      questionId,
+      questionIndex
+    });
   };
 
-  const toggleQuestion = (index: number) => {
-    setExpandedIndex(expandedIndex === index ? null : index);
+  const closeMockInterview = () => {
+    setMockInterviewState({
+      isOpen: false,
+      question: '',
+      questionId: 0,
+      questionIndex: 0
+    });
   };
 
   const goBack = () => {
@@ -181,7 +160,6 @@ export default function CategoryDetail({ category, onBack }: CategoryDetailProps
 
   const goToPage = (page: number) => {
     setCurrentPage(page);
-    setExpandedIndex(null); // Close any expanded questions when changing pages
   };
 
   const getGradient = () => {
@@ -256,62 +234,28 @@ export default function CategoryDetail({ category, onBack }: CategoryDetailProps
           <div className="relative">
             <div className="absolute -inset-0.5 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-3xl blur opacity-10"></div>
             <div className="relative bg-slate-900/50 backdrop-blur-xl rounded-3xl p-6 border border-slate-800">
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {currentQuestions.map((item, itemIndex) => {
-                  const globalIndex = startIndex + itemIndex;
-                  const isExpanded = expandedIndex === globalIndex;
-
                   return (
                     <div
                       key={itemIndex}
-                      className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden transition-all duration-300"
+                      className="bg-slate-800/50 rounded-xl border border-slate-700 p-5 transition-all duration-300 hover:border-cyan-500/50"
                     >
-                      <button
-                        onClick={() => toggleQuestion(globalIndex)}
-                        className="w-full flex items-center justify-between p-5 hover:bg-slate-800 transition-colors text-left"
-                      >
-                        <span className="text-white font-semibold pr-4">{item.question}</span>
-                        {isExpanded ? (
-                          <ChevronUp className="w-5 h-5 text-cyan-400 flex-shrink-0" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                      <div className="flex items-start justify-between mb-4">
+                        <p className="text-white font-semibold text-lg pr-4 flex-1">{item.question}</p>
+                      </div>
+                      
+                      <div className="flex items-center justify-end">
+                        {user && (
+                          <button
+                            onClick={() => openMockInterview(item.question, item.questionId, item.questionIndex)}
+                            className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold transition-all"
+                          >
+                            <Mic className="w-4 h-4" />
+                            <span>Try Now</span>
+                          </button>
                         )}
-                      </button>
-                      {isExpanded && (
-                        <div className="px-5 pb-5 pt-2 border-t border-slate-700">
-                          {item.answers.length > 0 ? (
-                            <div className="space-y-4">
-                              {item.answers.map((answer, answerIndex) => (
-                                <div key={answerIndex} className="bg-slate-700/50 rounded-lg p-4">
-                                  <div className="flex items-start justify-between mb-2">
-                                    <span className="text-cyan-400 text-sm font-semibold">
-                                      Answer {answerIndex + 1}
-                                    </span>
-                                  </div>
-                                  <p className="text-slate-300 leading-relaxed">{answer}</p>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-6">
-                              <MessageSquare className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                              <p className="text-slate-400 mb-4">No answers available yet</p>
-                            </div>
-                          )}
-                          
-                          {user && (
-                            <div className="mt-4 pt-4 border-t border-slate-600">
-                              <button
-                                onClick={() => openAddAnswer(item.questionId, item.questionIndex)}
-                                className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold transition-all"
-                              >
-                                <Plus className="w-4 h-4" />
-                                <span>Add Answer</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      </div>
                     </div>
                   );
                 })}
@@ -373,63 +317,31 @@ export default function CategoryDetail({ category, onBack }: CategoryDetailProps
         )}
       </div>
 
-      {/* Add Answer Modal */}
-      {addAnswerState.isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-2xl border border-slate-700 w-full max-w-2xl max-h-[80vh] overflow-hidden">
-            <div className="p-6 border-b border-slate-700">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-white">Add Your Answer</h3>
-                <button
-                  onClick={closeAddAnswer}
-                  className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-slate-400" />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              <div className="mb-4">
-                <label className="block text-slate-300 text-sm font-semibold mb-2">
-                  Your Answer
-                </label>
-                <textarea
-                  value={addAnswerState.answer}
-                  onChange={(e) => setAddAnswerState(prev => ({ ...prev, answer: e.target.value }))}
-                  placeholder="Share your answer to this interview question..."
-                  className="w-full h-32 px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 resize-none"
-                />
-              </div>
-              
-              <div className="flex items-center justify-end space-x-3">
-                <button
-                  onClick={closeAddAnswer}
-                  className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={saveAnswer}
-                  disabled={!addAnswerState.answer.trim() || saving}
-                  className="flex items-center space-x-2 px-6 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold transition-all disabled:cursor-not-allowed"
-                >
-                  {saving ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>Save Answer</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Mock Interview Modal */}
+      {mockInterviewState.isOpen && (
+        <MockInterviewModal
+          question={mockInterviewState.question}
+          onClose={closeMockInterview}
+          onInterviewComplete={async () => {
+            await incrementUsage();
+            await fetchUsageStatus();
+          }}
+        />
+      )}
+
+      {/* Upgrade Modal */}
+      {usageStatus && (
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          onUpgrade={() => {
+            setShowUpgradeModal(false);
+            // Navigate to pricing section on home page
+            window.location.href = '/#pricing';
+          }}
+          currentUsage={usageStatus.current_usage}
+          usageLimit={usageStatus.usage_limit}
+        />
       )}
     </div>
   );
