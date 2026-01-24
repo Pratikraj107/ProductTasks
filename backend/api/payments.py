@@ -76,10 +76,15 @@ async def create_order(request: CreateOrderRequest):
     
     try:
         # Create Razorpay order
+        # Receipt must be max 40 characters, so use short format
+        timestamp = int(datetime.now().timestamp())
+        user_short = request.user_id[:8] if len(request.user_id) > 8 else request.user_id
+        receipt = f"ord_{user_short}_{timestamp % 100000}"  # Keep under 40 chars
+        
         order_data = {
             "amount": request.amount,  # Amount in paise
             "currency": "INR",
-            "receipt": f"order_{request.user_id}_{int(datetime.now().timestamp())}",
+            "receipt": receipt,
             "notes": {
                 "user_id": request.user_id,
                 "plan_type": request.plan_type,
