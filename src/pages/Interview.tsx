@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { InterviewQuestion } from '../lib/database.types';
 import MockInterviewModal from '../components/MockInterviewModal';
+import UpgradeModal from '../components/UpgradeModal';
 import { useInterviewUsage } from '../hooks/useInterviewUsage';
 
 interface ParsedQuestion {
@@ -36,6 +37,7 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
   const [questions, setQuestions] = useState<CategoryData[]>([]);
   const [loading, setLoading] = useState(true);
   const [usageError, setUsageError] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [mockInterviewState, setMockInterviewState] = useState<MockInterviewState>({
     isOpen: false,
     question: '',
@@ -133,7 +135,8 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
     }
 
     if (!usageCheck.can_proceed) {
-      setUsageError(usageCheck.message || 'You have reached your monthly interview limit.');
+      // Show upgrade modal instead of error message
+      setShowUpgradeModal(true);
       return;
     }
 
@@ -327,6 +330,21 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
             await incrementUsage();
             await fetchUsageStatus();
           }}
+        />
+      )}
+
+      {/* Upgrade Modal */}
+      {usageStatus && (
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          onUpgrade={() => {
+            setShowUpgradeModal(false);
+            // Navigate to pricing section on home page
+            window.location.href = '/#pricing';
+          }}
+          currentUsage={usageStatus.current_usage}
+          usageLimit={usageStatus.usage_limit}
         />
       )}
     </div>

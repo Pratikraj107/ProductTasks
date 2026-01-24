@@ -19,6 +19,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import PaymentModal from '../components/PaymentModal';
 
 interface HomeProps {
   onNavigate?: (path: string) => void;
@@ -27,6 +28,8 @@ interface HomeProps {
 export default function Home({ onNavigate }: HomeProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{ type: 'monthly' | 'yearly'; amount: number; display: string } | null>(null);
   const { user, signOut } = useAuth();
 
   useEffect(() => {
@@ -525,6 +528,24 @@ export default function Home({ onNavigate }: HomeProps) {
           </div>
         </div>
       </footer>
+
+      {/* Payment Modal */}
+      {selectedPlan && (
+        <PaymentModal
+          isOpen={paymentModalOpen}
+          onClose={() => {
+            setPaymentModalOpen(false);
+            setSelectedPlan(null);
+          }}
+          planType={selectedPlan.type}
+          amount={selectedPlan.amount}
+          amountDisplay={selectedPlan.display}
+          onSuccess={() => {
+            // Refresh page or update subscription status
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 }

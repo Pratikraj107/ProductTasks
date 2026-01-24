@@ -15,6 +15,14 @@ except Exception as e:
     print(f"Warning: Usage tracker not available: {e}")
     USAGE_TRACKER_AVAILABLE = False
 
+# Import payments router
+try:
+    from api.payments import router as payments_router
+    PAYMENTS_AVAILABLE = True
+except Exception as e:
+    print(f"Warning: Payments not available: {e}")
+    PAYMENTS_AVAILABLE = False
+
 # Try to import ResumeReviewAgent, but don't fail if it's not available
 try:
     from agents.resume_reviewer import ResumeReviewAgent
@@ -93,6 +101,10 @@ except Exception as e:
 # Include usage tracker router if available
 if USAGE_TRACKER_AVAILABLE:
     app.include_router(usage_router)
+
+# Include payments router if available
+if PAYMENTS_AVAILABLE:
+    app.include_router(payments_router)
 
 @app.get("/")
 async def root():
