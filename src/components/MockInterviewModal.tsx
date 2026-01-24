@@ -4,6 +4,7 @@ import { X, Mic, MicOff, Pause, Play, RotateCcw, Check, Loader, MessageSquare } 
 interface MockInterviewModalProps {
   question: string;
   onClose: () => void;
+  onInterviewComplete?: () => void; // Callback when interview is completed (for usage tracking)
 }
 
 type RecordingState = 'idle' | 'recording' | 'paused' | 'processing' | 'transcribed' | 'feedback';
@@ -46,7 +47,7 @@ interface FeedbackData {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
-export default function MockInterviewModal({ question, onClose }: MockInterviewModalProps) {
+export default function MockInterviewModal({ question, onClose, onInterviewComplete }: MockInterviewModalProps) {
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [transcript, setTranscript] = useState('');
   const [editedTranscript, setEditedTranscript] = useState('');
@@ -270,6 +271,11 @@ export default function MockInterviewModal({ question, onClose }: MockInterviewM
       const feedbackData = await response.json();
       setFeedback(feedbackData);
       setRecordingState('feedback');
+      
+      // Increment usage count after successful feedback
+      if (onInterviewComplete) {
+        onInterviewComplete();
+      }
     } catch (err: any) {
       setError(`Failed to get feedback: ${err.message}`);
       setRecordingState('transcribed');
@@ -330,113 +336,190 @@ export default function MockInterviewModal({ question, onClose }: MockInterviewM
             </div>
           </div>
 
-          {/* Timer and Controls - Redesigned */}
+          {/* Timer and Transcript - Side by Side Layout */}
           {recordingState !== 'feedback' && (
             <div className="mb-8">
-              {/* Centered Timer Section */}
-              <div className="flex flex-col items-center justify-center mb-8">
-                {/* Timer Display */}
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full blur-2xl opacity-30 animate-pulse"></div>
-                  <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-full border-2 border-slate-700 shadow-2xl">
-                    <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-400 font-mono tracking-tight">
-                      {formatTime(timer)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recording Status Indicator */}
-                {recordingState === 'recording' && (
-                  <div className="flex flex-col items-center space-y-3 mb-6">
-                    <div className="flex items-center space-x-3 px-6 py-3 bg-red-500/10 border border-red-500/30 rounded-full backdrop-blur-sm">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
-                        <div className="relative w-4 h-4 bg-red-500 rounded-full"></div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column: Timer and Controls */}
+                <div className="flex flex-col items-center justify-center">
+                  {/* Timer Display */}
+                  <div className="relative mb-6 w-full max-w-xs">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full blur-2xl opacity-30 animate-pulse"></div>
+                    <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-full border-2 border-slate-700 shadow-2xl">
+                      <div className="text-5xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-400 font-mono tracking-tight text-center">
+                        {formatTime(timer)}
                       </div>
-                      <span className="text-red-400 font-bold text-sm uppercase tracking-wider">Recording</span>
-                    </div>
-                    {/* Audio Waveform Animation */}
-                    <div className="flex items-center justify-center space-x-1 h-8">
-                      {[...Array(5)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="w-1 bg-gradient-to-t from-red-500 to-red-400 rounded-full animate-pulse"
-                          style={{
-                            height: `${20 + Math.random() * 30}px`,
-                            animationDelay: `${i * 0.1}s`,
-                            animationDuration: `${0.5 + Math.random() * 0.3}s`
-                          }}
-                        ></div>
-                      ))}
                     </div>
                   </div>
-                )}
 
-                {recordingState === 'paused' && (
-                  <div className="flex items-center space-x-3 px-6 py-3 bg-yellow-500/10 border border-yellow-500/30 rounded-full backdrop-blur-sm mb-6">
-                    <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-                    <span className="text-yellow-400 font-bold text-sm uppercase tracking-wider">Paused</span>
-                  </div>
-                )}
-
-                {/* Control Buttons */}
-                <div className="flex items-center justify-center space-x-4">
-                  {recordingState === 'idle' && (
-                    <button
-                      onClick={startRecording}
-                      className="group relative"
-                    >
-                      <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-red-700 rounded-full blur-lg opacity-70 group-hover:opacity-100 transition-opacity animate-pulse"></div>
-                      <div className="relative flex items-center space-x-3 px-8 py-4 rounded-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-lg transition-all shadow-xl">
-                        <div className="w-3 h-3 bg-white rounded-full"></div>
-                        <Mic className="w-6 h-6" />
-                        <span>Start Recording</span>
-                      </div>
-                    </button>
-                  )}
-
+                  {/* Recording Status Indicator */}
                   {recordingState === 'recording' && (
-                    <button
-                      onClick={pauseRecording}
-                      className="group relative"
-                    >
-                      <div className="absolute -inset-1 bg-gradient-to-r from-yellow-600 to-yellow-700 rounded-full blur-lg opacity-70 group-hover:opacity-100 transition-opacity"></div>
-                      <div className="relative flex items-center space-x-3 px-8 py-4 rounded-full bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white font-bold text-lg transition-all shadow-xl">
-                        <Pause className="w-6 h-6" />
-                        <span>Pause</span>
+                    <div className="flex flex-col items-center space-y-3 mb-6 w-full">
+                      <div className="flex items-center space-x-3 px-6 py-3 bg-red-500/10 border border-red-500/30 rounded-full backdrop-blur-sm">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></div>
+                          <div className="relative w-4 h-4 bg-red-500 rounded-full"></div>
+                        </div>
+                        <span className="text-red-400 font-bold text-sm uppercase tracking-wider">Recording</span>
                       </div>
-                    </button>
+                      {/* Audio Waveform Animation */}
+                      <div className="flex items-center justify-center space-x-1 h-8">
+                        {[...Array(5)].map((_, i) => (
+                          <div
+                            key={i}
+                            className="w-1 bg-gradient-to-t from-red-500 to-red-400 rounded-full animate-pulse"
+                            style={{
+                              height: `${20 + Math.random() * 30}px`,
+                              animationDelay: `${i * 0.1}s`,
+                              animationDuration: `${0.5 + Math.random() * 0.3}s`
+                            }}
+                          ></div>
+                        ))}
+                      </div>
+                    </div>
                   )}
 
                   {recordingState === 'paused' && (
-                    <>
-                      <button
-                        onClick={resumeRecording}
-                        className="group relative"
-                      >
-                        <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-green-700 rounded-full blur-lg opacity-70 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="relative flex items-center space-x-3 px-8 py-4 rounded-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold text-lg transition-all shadow-xl">
-                          <Play className="w-6 h-6" />
-                          <span>Resume</span>
-                        </div>
-                      </button>
-                      <button
-                        onClick={stopRecording}
-                        className="group relative"
-                      >
-                        <div className="absolute -inset-1 bg-gradient-to-r from-slate-600 to-slate-700 rounded-full blur-lg opacity-70 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="relative flex items-center space-x-3 px-8 py-4 rounded-full bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white font-bold text-lg transition-all shadow-xl">
-                          <MicOff className="w-6 h-6" />
-                          <span>Stop</span>
-                        </div>
-                      </button>
-                    </>
+                    <div className="flex items-center space-x-3 px-6 py-3 bg-yellow-500/10 border border-yellow-500/30 rounded-full backdrop-blur-sm mb-6">
+                      <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
+                      <span className="text-yellow-400 font-bold text-sm uppercase tracking-wider">Paused</span>
+                    </div>
                   )}
 
-                  {recordingState === 'processing' && (
-                    <div className="flex items-center space-x-3 px-8 py-4 bg-slate-800/50 border border-slate-700 rounded-full">
-                      <Loader className="w-6 h-6 animate-spin text-cyan-400" />
-                      <span className="text-slate-300 font-semibold">Processing...</span>
+                  {/* Control Buttons */}
+                  <div className="flex flex-col items-center space-y-3 w-full">
+                    {recordingState === 'idle' && (
+                      <button
+                        onClick={startRecording}
+                        className="group relative w-full max-w-sm"
+                      >
+                        <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-red-700 rounded-full blur-lg opacity-70 group-hover:opacity-100 transition-opacity animate-pulse"></div>
+                        <div className="relative flex items-center justify-center space-x-3 px-8 py-4 rounded-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-lg transition-all shadow-xl">
+                          <div className="w-3 h-3 bg-white rounded-full"></div>
+                          <Mic className="w-6 h-6" />
+                          <span>Start Recording</span>
+                        </div>
+                      </button>
+                    )}
+
+                    {recordingState === 'recording' && (
+                      <button
+                        onClick={pauseRecording}
+                        className="group relative w-full max-w-sm"
+                      >
+                        <div className="absolute -inset-1 bg-gradient-to-r from-yellow-600 to-yellow-700 rounded-full blur-lg opacity-70 group-hover:opacity-100 transition-opacity"></div>
+                        <div className="relative flex items-center justify-center space-x-3 px-8 py-4 rounded-full bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white font-bold text-lg transition-all shadow-xl">
+                          <Pause className="w-6 h-6" />
+                          <span>Pause</span>
+                        </div>
+                      </button>
+                    )}
+
+                    {recordingState === 'paused' && (
+                      <div className="flex flex-col space-y-3 w-full max-w-sm">
+                        <button
+                          onClick={resumeRecording}
+                          className="group relative"
+                        >
+                          <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-green-700 rounded-full blur-lg opacity-70 group-hover:opacity-100 transition-opacity"></div>
+                          <div className="relative flex items-center justify-center space-x-3 px-8 py-4 rounded-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold text-lg transition-all shadow-xl">
+                            <Play className="w-6 h-6" />
+                            <span>Resume</span>
+                          </div>
+                        </button>
+                        <button
+                          onClick={stopRecording}
+                          className="group relative"
+                        >
+                          <div className="absolute -inset-1 bg-gradient-to-r from-slate-600 to-slate-700 rounded-full blur-lg opacity-70 group-hover:opacity-100 transition-opacity"></div>
+                          <div className="relative flex items-center justify-center space-x-3 px-8 py-4 rounded-full bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white font-bold text-lg transition-all shadow-xl">
+                            <MicOff className="w-6 h-6" />
+                            <span>Stop</span>
+                          </div>
+                        </button>
+                      </div>
+                    )}
+
+                    {recordingState === 'processing' && (
+                      <div className="flex items-center justify-center space-x-3 px-8 py-4 bg-slate-800/50 border border-slate-700 rounded-full w-full max-w-sm">
+                        <Loader className="w-6 h-6 animate-spin text-cyan-400" />
+                        <span className="text-slate-300 font-semibold">Processing...</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Column: Live Transcript */}
+                <div className="flex flex-col h-full">
+                  {(recordingState === 'recording' || recordingState === 'paused') && (
+                    <div className="relative group h-full flex flex-col">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition-opacity"></div>
+                      <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 flex flex-col h-full">
+                        <div className="flex items-center space-x-2 mb-4">
+                          <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                          <h3 className="text-lg font-bold text-white">Live Transcript</h3>
+                        </div>
+                        <div className="bg-slate-900/50 rounded-xl p-6 flex-1 overflow-y-auto border border-slate-700/30 custom-scrollbar min-h-[300px]">
+                          {transcript ? (
+                            <p className="text-slate-200 leading-relaxed whitespace-pre-wrap text-base">{transcript}</p>
+                          ) : (
+                            <p className="text-slate-500 italic text-center py-8">Your speech will appear here as you speak...</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {recordingState === 'transcribed' && (
+                    <div className="relative group h-full flex flex-col">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition-opacity"></div>
+                      <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 flex flex-col h-full">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                            <h3 className="text-lg font-bold text-white">Your Answer Transcript</h3>
+                          </div>
+                          <button
+                            onClick={handleReRecord}
+                            className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-white text-sm font-semibold transition-all border border-slate-600/50"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                            <span>Re-record</span>
+                          </button>
+                        </div>
+                        <textarea
+                          value={editedTranscript}
+                          onChange={(e) => setEditedTranscript(e.target.value)}
+                          placeholder="Your transcript will appear here..."
+                          className="w-full flex-1 min-h-[300px] px-5 py-4 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 resize-none transition-all custom-scrollbar"
+                        />
+                        <div className="mt-6 flex justify-end">
+                          <button
+                            onClick={getFeedback}
+                            disabled={!editedTranscript.trim()}
+                            className="group relative"
+                          >
+                            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full blur opacity-70 group-hover:opacity-100 transition-opacity disabled:opacity-30"></div>
+                            <div className="relative flex items-center space-x-2 px-8 py-3 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-bold transition-all disabled:cursor-not-allowed shadow-xl">
+                              <Check className="w-5 h-5" />
+                              <span>Get Feedback</span>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {(recordingState === 'idle' || recordingState === 'processing') && (
+                    <div className="relative group h-full flex flex-col">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-slate-600 to-slate-700 rounded-2xl blur opacity-10"></div>
+                      <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 flex flex-col h-full items-center justify-center min-h-[300px]">
+                        <div className="text-center text-slate-500">
+                          <Mic className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                          <p className="text-lg font-semibold">Transcript will appear here</p>
+                          <p className="text-sm mt-2">Start recording to see your speech transcribed in real-time</p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -448,67 +531,6 @@ export default function MockInterviewModal({ question, onClose }: MockInterviewM
           {error && (
             <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
               <p className="text-red-400 text-sm">{error}</p>
-            </div>
-          )}
-
-          {/* Transcript Section - Enhanced */}
-          {recordingState === 'transcribed' && (
-            <div className="mb-6">
-              <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition-opacity"></div>
-                <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      <h3 className="text-lg font-bold text-white">Your Answer Transcript</h3>
-                    </div>
-                    <button
-                      onClick={handleReRecord}
-                      className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-white text-sm font-semibold transition-all border border-slate-600/50"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      <span>Re-record</span>
-                    </button>
-                  </div>
-                  <textarea
-                    value={editedTranscript}
-                    onChange={(e) => setEditedTranscript(e.target.value)}
-                    placeholder="Your transcript will appear here..."
-                    className="w-full h-48 px-5 py-4 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 resize-none transition-all custom-scrollbar"
-                  />
-                  <div className="mt-6 flex justify-end">
-                    <button
-                      onClick={getFeedback}
-                      disabled={!editedTranscript.trim()}
-                      className="group relative"
-                    >
-                      <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full blur opacity-70 group-hover:opacity-100 transition-opacity disabled:opacity-30"></div>
-                      <div className="relative flex items-center space-x-2 px-8 py-3 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-bold transition-all disabled:cursor-not-allowed shadow-xl">
-                        <Check className="w-5 h-5" />
-                        <span>Get Feedback</span>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Real-time Transcript (during recording) - Enhanced */}
-          {(recordingState === 'recording' || recordingState === 'paused') && transcript && (
-            <div className="mb-6">
-              <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition-opacity"></div>
-                <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                    <h3 className="text-lg font-bold text-white">Live Transcript</h3>
-                  </div>
-                  <div className="bg-slate-900/50 rounded-xl p-6 max-h-64 overflow-y-auto border border-slate-700/30 custom-scrollbar">
-                    <p className="text-slate-200 leading-relaxed whitespace-pre-wrap text-base">{transcript}</p>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 

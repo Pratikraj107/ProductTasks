@@ -1,9 +1,10 @@
-import { MessageSquare, ArrowRight, Mic } from 'lucide-react';
+import { MessageSquare, ArrowRight, Mic, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { InterviewQuestion } from '../lib/database.types';
 import MockInterviewModal from '../components/MockInterviewModal';
+import { useInterviewUsage } from '../hooks/useInterviewUsage';
 
 interface ParsedQuestion {
   question: string;
@@ -31,8 +32,10 @@ interface InterviewProps {
 
 export default function Interview({ onNavigateToCategory }: InterviewProps) {
   const { user } = useAuth();
+  const { usageStatus, checkUsage, incrementUsage, fetchUsageStatus } = useInterviewUsage();
   const [questions, setQuestions] = useState<CategoryData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [usageError, setUsageError] = useState<string | null>(null);
   const [mockInterviewState, setMockInterviewState] = useState<MockInterviewState>({
     isOpen: false,
     question: '',
@@ -116,7 +119,25 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
       .filter(q => q.length > 0);
   };
 
-  const openMockInterview = (question: string, questionId: number, questionIndex: number) => {
+  const openMockInterview = async (question: string, questionId: number, questionIndex: number) => {
+    if (!user) {
+      setUsageError('Please sign in to use mock interviews');
+      return;
+    }
+
+    // Check usage before opening
+    const usageCheck = await checkUsage();
+    if (!usageCheck) {
+      setUsageError('Unable to check usage limits. Please try again.');
+      return;
+    }
+
+    if (!usageCheck.can_proceed) {
+      setUsageError(usageCheck.message || 'You have reached your monthly interview limit.');
+      return;
+    }
+
+    setUsageError(null);
     setMockInterviewState({
       isOpen: true,
       question,
@@ -156,9 +177,45 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-black text-white mb-2">Interview Questions</h1>
-        <p className="text-slate-400">Practice common PM interview questions with detailed answers</p>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-4xl font-black text-white mb-2">Interview Questions</h1>
+            <p className="text-slate-400">Practice common PM interview questions with detailed answers</p>
+          </div>
+          {usageStatus && user && (
+            <div className="text-right">
+              <div className="bg-slate-800/50 backdrop-blur-xl rounded-xl p-4 border border-slate-700">
+                <div className="text-sm text-slate-400 mb-1">Monthly Usage</div>
+                <div className="text-2xl font-bold text-white">
+                  {usageStatus.current_usage} / {usageStatus.usage_limit}
+                </div>
+                <div className="text-xs text-slate-500 mt-1 capitalize">{usageStatus.plan_type} Plan</div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Usage Error Message */}
+      {usageError && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center space-x-3">
+          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-red-400 font-semibold">{usageError}</p>
+            {usageStatus && usageStatus.remaining === 0 && (
+              <p className="text-red-300 text-sm mt-1">
+                Upgrade to a paid plan to get 25 interviews per month.
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => setUsageError(null)}
+            className="text-red-400 hover:text-red-300"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <div className="mb-8 relative">
         <div className="absolute -inset-0.5 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-3xl blur opacity-20"></div>
@@ -266,6 +323,10 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
         <MockInterviewModal
           question={mockInterviewState.question}
           onClose={closeMockInterview}
+          onInterviewComplete={async () => {
+            await incrementUsage();
+            await fetchUsageStatus();
+          }}
         />
       )}
     </div>

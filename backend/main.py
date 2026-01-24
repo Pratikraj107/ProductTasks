@@ -7,6 +7,14 @@ from pathlib import Path
 from agents.interview_feedback import InterviewFeedbackAgent
 from pydantic import BaseModel
 
+# Import usage tracker router
+try:
+    from api.usage_tracker import router as usage_router
+    USAGE_TRACKER_AVAILABLE = True
+except Exception as e:
+    print(f"Warning: Usage tracker not available: {e}")
+    USAGE_TRACKER_AVAILABLE = False
+
 # Try to import ResumeReviewAgent, but don't fail if it's not available
 try:
     from agents.resume_reviewer import ResumeReviewAgent
@@ -81,6 +89,10 @@ except Exception as e:
     print("Make sure OPENAI_API_KEY is set in .env file")
     interview_agent_initialized = False
     interview_agent = None
+
+# Include usage tracker router if available
+if USAGE_TRACKER_AVAILABLE:
+    app.include_router(usage_router)
 
 @app.get("/")
 async def root():
