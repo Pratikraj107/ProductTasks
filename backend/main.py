@@ -63,11 +63,13 @@ ALLOWED_ORIGINS = os.getenv(
 # Add production domains if provided
 PRODUCTION_DOMAIN = os.getenv("FRONTEND_DOMAIN", "")
 if PRODUCTION_DOMAIN:
+    # Remove protocol if present
+    domain = PRODUCTION_DOMAIN.replace("https://", "").replace("http://", "").strip()
     ALLOWED_ORIGINS.extend([
-        f"https://{PRODUCTION_DOMAIN}",
-        f"https://www.{PRODUCTION_DOMAIN}",
-        f"http://{PRODUCTION_DOMAIN}",
-        f"http://www.{PRODUCTION_DOMAIN}"
+        f"https://{domain}",
+        f"https://www.{domain}",
+        f"http://{domain}",
+        f"http://www.{domain}"
     ])
 
 # Add Railway frontend domain if provided
@@ -75,12 +77,29 @@ RAILWAY_FRONTEND = os.getenv("RAILWAY_FRONTEND_DOMAIN", "")
 if RAILWAY_FRONTEND:
     ALLOWED_ORIGINS.append(RAILWAY_FRONTEND)
 
+# Explicitly add producttasks.com if not already added
+if "https://producttasks.com" not in ALLOWED_ORIGINS:
+    ALLOWED_ORIGINS.extend([
+        "https://producttasks.com",
+        "https://www.producttasks.com",
+        "http://producttasks.com",
+        "http://www.producttasks.com"
+    ])
+
+# Remove duplicates and empty strings
+ALLOWED_ORIGINS = list(set([origin.strip() for origin in ALLOWED_ORIGINS if origin.strip()]))
+
+# Log allowed origins for debugging (only in development or if DEBUG is set)
+if os.getenv("DEBUG", "").lower() == "true":
+    print(f"CORS Allowed Origins: {ALLOWED_ORIGINS}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Initialize the agents

@@ -56,12 +56,34 @@ export function useInterviewUsage() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/usage/check/${user.id}`);
       if (!response.ok) {
-        throw new Error('Failed to check usage');
+        const errorText = await response.text();
+        let errorMessage = 'Failed to check usage';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+        console.error('Usage check failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          url: `${API_BASE_URL}/api/usage/check/${user.id}`
+        });
+        throw new Error(errorMessage);
       }
       const data = await response.json();
       return data;
     } catch (err) {
       console.error('Error checking usage:', err);
+      // Return a more informative error structure
+      if (err instanceof Error) {
+        console.error('Error details:', {
+          message: err.message,
+          apiUrl: API_BASE_URL,
+          userId: user.id
+        });
+      }
       return null;
     }
   };

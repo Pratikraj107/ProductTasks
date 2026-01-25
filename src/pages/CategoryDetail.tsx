@@ -149,26 +149,36 @@ export default function CategoryDetail({ category, onBack }: CategoryDetailProps
       return;
     }
 
-    // Check usage before opening
-    const usageCheck = await checkUsage();
-    if (!usageCheck) {
-      setUsageError('Unable to check usage limits. Please try again.');
-      return;
-    }
-
-    if (!usageCheck.can_proceed) {
-      // Show upgrade modal instead of error message
-      setShowUpgradeModal(true);
-      return;
-    }
-
+    // Clear any previous errors
     setUsageError(null);
-    setMockInterviewState({
-      isOpen: true,
-      question,
-      questionId,
-      questionIndex
-    });
+
+    // Check usage before opening
+    try {
+      const usageCheck = await checkUsage();
+      if (!usageCheck) {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        setUsageError(`Unable to check usage limits. Please check if the backend is running at ${API_BASE_URL}`);
+        console.error('Usage check returned null. Check browser console for details.');
+        return;
+      }
+
+      if (!usageCheck.can_proceed) {
+        // Show upgrade modal instead of error message
+        setShowUpgradeModal(true);
+        return;
+      }
+
+      setUsageError(null);
+      setMockInterviewState({
+        isOpen: true,
+        question,
+        questionId,
+        questionIndex
+      });
+    } catch (err) {
+      console.error('Error in openMockInterview:', err);
+      setUsageError('An error occurred while checking usage limits. Please try again.');
+    }
   };
 
   const closeMockInterview = () => {
