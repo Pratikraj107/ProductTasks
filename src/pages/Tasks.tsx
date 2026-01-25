@@ -188,7 +188,7 @@ export default function Tasks({ onNavigateToSubtopic }: TasksProps = {}) {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-black text-white mb-2">Tasks</h1>
+            <h1 className="text-4xl font-black text-white mb-2">30-Day AI Product Management Sprint</h1>
             <p className="text-slate-400">Stay on track with your daily learning goals</p>
           </div>
           <button

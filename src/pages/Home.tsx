@@ -305,7 +305,7 @@ export default function Home({ onNavigate }: HomeProps) {
               <span className="text-sm font-medium text-cyan-300 relative z-10">Ace Your Product Management Interviews</span>
             </div>
 
-            <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black mb-8 leading-[1.1] tracking-tight">
+            <h1 className="text-6xl sm:text-6xl lg:text-6xl font-black mb-8 leading-[1.1] tracking-tight">
               <span className="block mb-2">Master PM Interviews</span>
               <span className="block mb-2">with AI-Powered</span>
               <span className="relative inline-block">

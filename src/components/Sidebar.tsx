@@ -35,11 +35,12 @@ export default function Sidebar({ currentPage, onNavigate, isCollapsed = false, 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { id: 'topics', label: 'Topics', icon: <BookOpen className="w-5 h-5" /> },
-    { id: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-5 h-5" /> },
-    { id: 'tools', label: 'Tools', icon: <Wrench className="w-5 h-5" /> },
+    { id: 'tasks', label: 'Roadmap', icon: <CheckSquare className="w-5 h-5" /> },
+    { id: 'interview', label: 'Mock Interview', icon: <MessageSquare className="w-5 h-5" /> },
+    // { id: 'tools', label: 'Tools', icon: <Wrench className="w-5 h-5" /> },
     { id: 'resources', label: 'Product Resources', icon: <Link className="w-5 h-5" /> },
-    { id: 'interview', label: 'Interview Questions', icon: <MessageSquare className="w-5 h-5" /> },
-    { id: 'resume', label: 'Resume', icon: <FileText className="w-5 h-5" /> },
+
+    // { id: 'resume', label: 'Resume', icon: <FileText className="w-5 h-5" /> },
     { id: 'community', label: 'Join Community', icon: <Users className="w-5 h-5" /> },
     { id: 'profile', label: 'Profile', icon: <User className="w-5 h-5" /> },
   ];
