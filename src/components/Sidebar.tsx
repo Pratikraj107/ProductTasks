@@ -67,7 +67,7 @@ export default function Sidebar({ currentPage, onNavigate, isCollapsed = false, 
       )}
 
       {!isCollapsed && (
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto min-h-0">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto md:overflow-y-visible min-h-0">
           {/* <button
             onClick={toggleTheme}
             className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-200 mb-2"
