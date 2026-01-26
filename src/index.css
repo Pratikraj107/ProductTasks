@@ -162,3 +162,36 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgb(34 211 238 / 0.5);
 }
+
+/* Hide scrollbar on desktop but show on mobile */
+.hide-scrollbar-desktop::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.hide-scrollbar-desktop::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 4px;
+}
+
+.hide-scrollbar-desktop::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 4px;
+}
+
+.hide-scrollbar-desktop::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
+}
+
+/* Hide scrollbar on desktop (md and above) */
+@media (min-width: 768px) {
+  .hide-scrollbar-desktop::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+  }
+  
+  .hide-scrollbar-desktop {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
