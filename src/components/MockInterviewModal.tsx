@@ -298,6 +298,43 @@ export default function MockInterviewModal({ question, questionId, questionIndex
     audioChunksRef.current = [];
   };
 
+  const generateAnswer = async () => {
+    if (!questionId || questionIndex === undefined) {
+      setError('Question ID and index are required to generate answer');
+      return;
+    }
+
+    setIsGeneratingAnswer(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/answers/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question,
+          question_id: questionId,
+          question_index: questionIndex,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to generate answer');
+      }
+
+      const data = await response.json();
+      setGeneratedAnswer(data.answer);
+    } catch (err: any) {
+      setError(`Failed to generate answer: ${err.message}`);
+      console.error('Error generating answer:', err);
+    } finally {
+      setIsGeneratingAnswer(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="w-full max-w-5xl max-h-[95vh] bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 rounded-3xl border border-slate-800/50 shadow-2xl overflow-hidden flex flex-col">
