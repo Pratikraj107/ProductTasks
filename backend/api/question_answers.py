@@ -74,13 +74,13 @@ async def get_answer(question_id: int, question_index: int):
     try:
         supabase = get_supabase_client()
         
-        # Try to get existing answer
+        # Try to get existing answer - handle None result
         result = supabase.table("question_answers").select("*").eq("question_id", question_id).eq("question_index", question_index).maybe_single().execute()
         
-        if result.data:
-            return AnswerResponse(answer=result.data["answer"], exists=True)
-        else:
+        if result is None or not hasattr(result, 'data') or not result.data:
             return AnswerResponse(answer=None, exists=False)
+        else:
+            return AnswerResponse(answer=result.data["answer"], exists=True)
     
     except Exception as e:
         print(f"Error getting answer: {str(e)}")
@@ -110,10 +110,10 @@ async def generate_and_save_answer(request: GenerateAnswerRequest):
         # Save to database
         supabase = get_supabase_client()
         
-        # Check if answer already exists
+        # Check if answer already exists - handle None result
         existing = supabase.table("question_answers").select("*").eq("question_id", request.question_id).eq("question_index", request.question_index).maybe_single().execute()
         
-        if existing.data:
+        if existing is not None and hasattr(existing, 'data') and existing.data:
             # Update existing answer
             supabase.table("question_answers").update({
                 "answer": answer,
