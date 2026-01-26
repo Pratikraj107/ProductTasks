@@ -5,6 +5,14 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 import os
+
+# Unset proxy environment variables before importing Supabase
+_proxy_vars = ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"]
+_original_proxy_values = {}
+for var in _proxy_vars:
+    if var in os.environ:
+        _original_proxy_values[var] = os.environ.pop(var)
+
 import razorpay
 from datetime import datetime, timedelta
 from supabase import create_client, Client
@@ -29,26 +37,13 @@ def get_supabase_client() -> Client:
     if not SUPABASE_URL or not SUPABASE_KEY:
         raise ValueError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set")
     
-    # Railway might set proxy environment variables that cause issues
-    # Temporarily unset them for Supabase client initialization
-    original_proxy = os.environ.pop("HTTP_PROXY", None)
-    original_https_proxy = os.environ.pop("HTTPS_PROXY", None)
-    original_proxy_lower = os.environ.pop("http_proxy", None)
-    original_https_proxy_lower = os.environ.pop("https_proxy", None)
+    # Ensure proxy vars are still unset (they should be from module-level unset)
+    for var in _proxy_vars:
+        if var in os.environ:
+            del os.environ[var]
     
-    try:
-        client = create_client(SUPABASE_URL, SUPABASE_KEY)
-        return client
-    finally:
-        # Restore proxy env vars if they existed
-        if original_proxy:
-            os.environ["HTTP_PROXY"] = original_proxy
-        if original_https_proxy:
-            os.environ["HTTPS_PROXY"] = original_https_proxy
-        if original_proxy_lower:
-            os.environ["http_proxy"] = original_proxy_lower
-        if original_https_proxy_lower:
-            os.environ["https_proxy"] = original_https_proxy_lower
+    # Create client - proxy vars are already unset at module level
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 class CreateOrderRequest(BaseModel):
     user_id: str
