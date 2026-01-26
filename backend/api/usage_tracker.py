@@ -82,10 +82,10 @@ async def check_usage(user_id: str) -> UsageResponse:
         
         supabase = get_supabase_client()
         
-        # Get user subscription
+        # Get user subscription - handle None result
         subscription_result = supabase.table("user_subscriptions").select("*").eq("user_id", user_id).maybe_single().execute()
         
-        if not subscription_result.data:
+        if subscription_result is None or not hasattr(subscription_result, 'data') or not subscription_result.data:
             # Create default free subscription if doesn't exist
             supabase.table("user_subscriptions").insert({
                 "user_id": user_id,
@@ -95,10 +95,10 @@ async def check_usage(user_id: str) -> UsageResponse:
         else:
             plan_type = subscription_result.data.get("plan_type", "free")
         
-        # Get or create usage record for current month
+        # Get or create usage record for current month - handle None result
         usage_result = supabase.table("interview_usage").select("*").eq("user_id", user_id).eq("usage_month", current_month.isoformat()).maybe_single().execute()
         
-        if not usage_result.data:
+        if usage_result is None or not hasattr(usage_result, 'data') or not usage_result.data:
             # Create new usage record for current month
             supabase.table("interview_usage").insert({
                 "user_id": user_id,
@@ -138,10 +138,10 @@ async def increment_usage(request: IncrementUsageRequest) -> dict:
         
         supabase = get_supabase_client()
         
-        # Get or create usage record
+        # Get or create usage record - handle None result
         usage_result = supabase.table("interview_usage").select("*").eq("user_id", request.user_id).eq("usage_month", current_month.isoformat()).maybe_single().execute()
         
-        if not usage_result.data:
+        if usage_result is None or not hasattr(usage_result, 'data') or not usage_result.data:
             # Create new usage record
             result = supabase.table("interview_usage").insert({
                 "user_id": request.user_id,
@@ -177,13 +177,19 @@ async def get_usage_status(user_id: str) -> dict:
         
         supabase = get_supabase_client()
         
-        # Get subscription
+        # Get subscription - handle None result
         subscription_result = supabase.table("user_subscriptions").select("*").eq("user_id", user_id).maybe_single().execute()
-        plan_type = subscription_result.data.get("plan_type", "free") if subscription_result.data else "free"
+        if subscription_result is None or not hasattr(subscription_result, 'data') or subscription_result.data is None:
+            plan_type = "free"
+        else:
+            plan_type = subscription_result.data.get("plan_type", "free")
         
-        # Get usage
+        # Get usage - handle None result
         usage_result = supabase.table("interview_usage").select("*").eq("user_id", user_id).eq("usage_month", current_month.isoformat()).maybe_single().execute()
-        current_usage = usage_result.data.get("usage_count", 0) if usage_result.data else 0
+        if usage_result is None or not hasattr(usage_result, 'data') or usage_result.data is None:
+            current_usage = 0
+        else:
+            current_usage = usage_result.data.get("usage_count", 0)
         
         usage_limit = get_usage_limit(plan_type)
         
