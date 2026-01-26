@@ -48,10 +48,10 @@ export default function Sidebar({ currentPage, onNavigate, isCollapsed = false, 
   return (
     <div className={`
       ${isCollapsed ? 'w-0' : 'w-64'} 
-      min-h-screen bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 overflow-hidden
+      h-screen bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 overflow-hidden
     `}>
       {!isCollapsed && (
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg blur opacity-75 animate-pulse"></div>
@@ -67,7 +67,7 @@ export default function Sidebar({ currentPage, onNavigate, isCollapsed = false, 
       )}
 
       {!isCollapsed && (
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto min-h-0">
           {/* <button
             onClick={toggleTheme}
             className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-700 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-200 mb-2"
@@ -93,7 +93,7 @@ export default function Sidebar({ currentPage, onNavigate, isCollapsed = false, 
       )}
 
       {!isCollapsed && (
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white/90 dark:bg-slate-900/80">
           <div className="mb-4 px-4 py-3 bg-slate-100 dark:bg-slate-800/50 rounded-lg">
             <p className="text-xs text-slate-600 dark:text-slate-500 mb-1">Signed in as</p>
             <p className="text-sm text-slate-900 dark:text-white truncate">{user?.email}</p>
