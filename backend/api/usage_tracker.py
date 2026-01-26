@@ -14,6 +14,25 @@ for var in _proxy_vars:
     if var in os.environ:
         _original_proxy_values[var] = os.environ.pop(var)
 
+# Patch httpx.Client to ignore proxy arguments if they cause issues
+try:
+    import httpx
+    
+    # Store original __init__
+    _original_httpx_init = httpx.Client.__init__
+    
+    def _patched_httpx_init(self, *args, **kwargs):
+        # Remove proxy-related kwargs that might cause issues
+        kwargs.pop('proxy', None)
+        kwargs.pop('proxies', None)
+        # Call original init
+        return _original_httpx_init(self, *args, **kwargs)
+    
+    # Apply patch
+    httpx.Client.__init__ = _patched_httpx_init
+except Exception as e:
+    print(f"Warning: Could not patch httpx.Client: {e}")
+
 from supabase import create_client, Client
 
 router = APIRouter(prefix="/api/usage", tags=["usage"])
