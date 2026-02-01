@@ -7,6 +7,14 @@ import soundfile as sf
 from scipy import signal
 from openai import OpenAI
 
+# Try to import pydub, but don't fail if it's not available
+try:
+    from pydub import AudioSegment
+    PYDUB_AVAILABLE = True
+except ImportError:
+    PYDUB_AVAILABLE = False
+    print("Warning: pydub not available. WebM conversion may not work. Install with: pip install pydub")
+
 class AudioAnalyzer:
     """
     Analyzes audio recordings for speech delivery characteristics:
@@ -30,21 +38,40 @@ class AudioAnalyzer:
         Returns detailed analysis with scores (0-100) for each metric.
         """
         try:
-            # Load audio file
+            # Convert WebM/Opus to WAV format that librosa can read
             audio_file = io.BytesIO(audio_bytes)
             
-            # Try to load with librosa (handles various formats)
-            try:
-                y, sr = librosa.load(audio_file, sr=None, duration=None)
-            except Exception as e:
-                # If librosa fails, try converting with soundfile
-                audio_file.seek(0)
+            # Check if file is WebM or Opus format
+            if filename.endswith('.webm') or filename.endswith('.opus') or 'webm' in filename.lower():
+                if PYDUB_AVAILABLE:
+                    try:
+                        # Use pydub to convert WebM to WAV
+                        audio_segment = AudioSegment.from_file(audio_file, format="webm")
+                        # Convert to mono and export to WAV format in memory
+                        audio_segment = audio_segment.set_channels(1)  # Convert to mono
+                        wav_buffer = io.BytesIO()
+                        audio_segment.export(wav_buffer, format="wav")
+                        wav_buffer.seek(0)
+                        # Now load with librosa
+                        y, sr = librosa.load(wav_buffer, sr=None, duration=None)
+                    except Exception as pydub_error:
+                        print(f"Warning: pydub conversion failed: {pydub_error}")
+                        raise Exception(f"Could not convert WebM audio file. Error: {pydub_error}. Make sure ffmpeg is installed: https://ffmpeg.org/download.html")
+                else:
+                    raise Exception("WebM audio format requires pydub library. Install with: pip install pydub. Also ensure ffmpeg is installed on your system.")
+            else:
+                # Try direct loading for other formats (WAV, MP3, etc.)
                 try:
-                    y, sr = sf.read(audio_file)
-                    if len(y.shape) > 1:
-                        y = np.mean(y, axis=1)  # Convert to mono
-                except Exception as e2:
-                    raise Exception(f"Could not load audio file: {str(e)}")
+                    y, sr = librosa.load(audio_file, sr=None, duration=None)
+                except Exception as e:
+                    # Fallback to soundfile
+                    audio_file.seek(0)
+                    try:
+                        y, sr = sf.read(audio_file)
+                        if len(y.shape) > 1:
+                            y = np.mean(y, axis=1)  # Convert to mono
+                    except Exception as e2:
+                        raise Exception(f"Could not load audio file. librosa error: {e}, soundfile error: {e2}")
             
             duration = len(y) / sr
             
