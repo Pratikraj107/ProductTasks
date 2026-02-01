@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
@@ -6,7 +6,10 @@ import os
 from pathlib import Path
 from agents.interview_feedback import InterviewFeedbackAgent
 from agents.communication_analyzer import CommunicationAnalyzer
+from agents.script_generator import ScriptGenerator
+from agents.audio_analyzer import AudioAnalyzer
 from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
 
 # Import usage tracker router
 try:
@@ -134,6 +137,24 @@ except Exception as e:
     print("Make sure OPENAI_API_KEY is set in .env file")
     communication_analyzer_initialized = False
     communication_analyzer = None
+
+try:
+    audio_analyzer = AudioAnalyzer()
+    audio_analyzer_initialized = True
+except Exception as e:
+    print(f"Warning: Could not initialize audio analyzer: {e}")
+    print("Make sure OPENAI_API_KEY is set and librosa/soundfile are installed")
+    audio_analyzer_initialized = False
+    audio_analyzer = None
+
+try:
+    script_generator = ScriptGenerator()
+    script_generator_initialized = True
+except Exception as e:
+    print(f"Warning: Could not initialize script generator: {e}")
+    print("Make sure OPENAI_API_KEY is set in .env file")
+    script_generator_initialized = False
+    script_generator = None
 
 # Include usage tracker router if available
 if USAGE_TRACKER_AVAILABLE:
@@ -290,6 +311,7 @@ class AnalyzePresenceRequest(BaseModel):
     prompt: str
     transcript: str
     audio_duration: float = 0
+    is_reading_script: bool = False  # True when user is reading AI-generated script
 
 @app.post("/api/communication/compress-answer")
 async def compress_answer(request: CompressAnswerRequest):
@@ -318,7 +340,7 @@ async def compress_answer(request: CompressAnswerRequest):
 @app.post("/api/communication/analyze-presence")
 async def analyze_presence(request: AnalyzePresenceRequest):
     """
-    Analyze speech patterns for executive presence
+    Analyze speech patterns for executive presence (transcript-based)
     """
     if not communication_analyzer_initialized:
         raise HTTPException(
@@ -330,10 +352,22 @@ async def analyze_presence(request: AnalyzePresenceRequest):
         if not request.prompt or not request.transcript:
             raise HTTPException(status_code=400, detail="Prompt and transcript are required")
         
+        # Validate transcript is not empty
+        if not request.transcript.strip():
+            raise HTTPException(status_code=400, detail="Transcript cannot be empty. Please ensure your recording was captured correctly.")
+        
+        # Validate duration is reasonable (at least 1 second)
+        if request.audio_duration < 1:
+            # If duration is too short, estimate from transcript length
+            word_count = len(request.transcript.split())
+            estimated_duration = word_count / 150  # Estimate at 150 WPM
+            request.audio_duration = max(estimated_duration, 1.0)
+        
         result = await communication_analyzer.analyze_presence(
             request.prompt,
             request.transcript,
-            request.audio_duration
+            request.audio_duration,
+            request.is_reading_script
         )
         return JSONResponse(content=result)
     
@@ -342,6 +376,181 @@ async def analyze_presence(request: AnalyzePresenceRequest):
     except Exception as e:
         print(f"Error analyzing presence: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error analyzing presence: {str(e)}")
+
+@app.post("/api/communication/analyze-presence-audio")
+async def analyze_presence_with_audio(
+    audio: UploadFile = File(...),
+    prompt: str = Form(None),
+    transcript: str = Form(None),
+    audio_duration: float = Form(0),
+    is_reading_script: bool = Form(True)
+):
+    """
+    Analyze speech patterns for executive presence using audio file analysis.
+    Used when reading script - provides voice-based feedback with scores.
+    """
+    if not audio_analyzer_initialized:
+        raise HTTPException(
+            status_code=503,
+            detail="Audio analyzer not initialized. Please check OPENAI_API_KEY and ensure librosa/soundfile are installed"
+        )
+    
+    try:
+        # Read audio file
+        audio_bytes = await audio.read()
+        
+        if len(audio_bytes) == 0:
+            raise HTTPException(status_code=400, detail="Audio file is empty")
+        
+        # Perform audio analysis
+        audio_analysis = await audio_analyzer.analyze_audio(
+            audio_bytes, 
+            audio.filename or "audio.webm"
+        )
+        
+        # Get transcript-based analysis for fillers, qualifiers, etc. (if transcript provided)
+        transcript_analysis = {}
+        if transcript and communication_analyzer_initialized:
+            try:
+                transcript_analysis = await communication_analyzer.analyze_presence(
+                    prompt or "",
+                    transcript,
+                    audio_duration if audio_duration > 0 else audio_analysis.get("duration", 0),
+                    is_reading_script
+                )
+            except Exception as e:
+                print(f"Warning: Transcript analysis failed: {str(e)}")
+        
+        # Merge analyses - audio analysis takes precedence for delivery metrics
+        result = {
+            **transcript_analysis,  # Fillers, qualifiers, confidence from transcript
+            **audio_analysis  # Tone, pace, clarity, emphasis, pauses, voice quality from audio
+        }
+        
+        # Update overall assessment to focus on delivery when reading script
+        if is_reading_script and "overall_assessment" in result:
+            result["overall_assessment"] = "This analysis focuses on speech delivery only. Content quality is not evaluated as you were reading an AI-generated script."
+        
+        return JSONResponse(content=result)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error analyzing audio presence: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error analyzing audio presence: {str(e)}")
+
+# Script Generation endpoints
+class GenerateScriptRequest(BaseModel):
+    script_type: str  # 'interview_question', 'presentation_prompt', 'star_scenario', 'elevator_pitch'
+
+class GenerateCompleteAnswerRequest(BaseModel):
+    script_content: str
+    script_type: str
+    sections: Optional[List[Dict[str, Any]]] = None
+    key_points: Optional[List[str]] = None
+    tips: Optional[List[str]] = None
+
+@app.post("/api/communication/generate-script")
+async def generate_script(request: GenerateScriptRequest):
+    """
+    Generate a practice script for communication lab and save it to database
+    """
+    print(f"[DEBUG] Received generate-script request for type: {request.script_type}")
+    
+    if not script_generator_initialized:
+        print("[ERROR] Script generator not initialized")
+        raise HTTPException(
+            status_code=503,
+            detail="Script generator not initialized. Please check OPENAI_API_KEY in .env file"
+        )
+    
+    try:
+        valid_types = ['interview_question', 'presentation_prompt', 'star_scenario', 'elevator_pitch']
+        if request.script_type not in valid_types:
+            raise HTTPException(status_code=400, detail=f"Invalid script_type. Must be one of: {valid_types}")
+        
+        print(f"[DEBUG] Starting script generation for type: {request.script_type}")
+        
+        # Generate the script with timeout handling
+        import asyncio
+        try:
+            result = await asyncio.wait_for(
+                script_generator.generate_script(request.script_type),
+                timeout=70.0  # 70 seconds total timeout (60s for API + 10s buffer)
+            )
+            print(f"[DEBUG] Script generation completed successfully")
+        except asyncio.TimeoutError:
+            print("[ERROR] Script generation timed out after 70 seconds")
+            raise HTTPException(
+                status_code=504,
+                detail="Script generation timed out. The request took too long. Please try again."
+            )
+        
+        # Save to database if Supabase is configured (non-blocking, don't wait)
+        try:
+            SUPABASE_URL = os.getenv("SUPABASE_URL")
+            SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            
+            if SUPABASE_URL and SUPABASE_KEY:
+                from supabase import create_client
+                supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+                
+                # Insert script into database (fire and forget - don't block response)
+                try:
+                    supabase.table("practice_scripts").insert({
+                        "script_type": result["script_type"],
+                        "title": result["title"],
+                        "script_content": result["script_content"],
+                        "tips": result.get("tips", []),
+                        "key_points": result.get("key_points", []),
+                        "estimated_time": result.get("estimated_time"),
+                        "sections": result.get("sections", [])
+                    }).execute()
+                except Exception as db_insert_error:
+                    # Don't fail if database save fails, just log it
+                    print(f"Warning: Could not save script to database: {str(db_insert_error)}")
+        except Exception as db_error:
+            # Don't fail if database connection fails, just log it
+            print(f"Warning: Database not available: {str(db_error)}")
+        
+        return JSONResponse(content=result)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error generating script: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating script: {str(e)}")
+
+@app.post("/api/communication/generate-complete-answer")
+async def generate_complete_answer(request: GenerateCompleteAnswerRequest):
+    """
+    Generate a complete answer/script based on script structure for user to read while practicing
+    """
+    if not script_generator_initialized:
+        raise HTTPException(
+            status_code=503,
+            detail="Script generator not initialized. Please check OPENAI_API_KEY in .env file"
+        )
+    
+    try:
+        if not request.script_content:
+            raise HTTPException(status_code=400, detail="Script content is required")
+        
+        complete_answer = await script_generator.generate_complete_answer(
+            request.script_content,
+            request.script_type,
+            request.sections or [],
+            request.key_points or [],
+            request.tips or []
+        )
+        
+        return JSONResponse(content={"complete_answer": complete_answer})
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error generating complete answer: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error generating complete answer: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Pause, Play } from 'lucide-react';
 
 interface AudioRecorderProps {
-  onRecordingComplete: (audioBlob: Blob, transcript: string) => void;
+  onRecordingComplete: (audioBlob: Blob, transcript: string, duration: number) => void;
   onTranscriptUpdate?: (transcript: string) => void;
   disabled?: boolean;
 }
@@ -151,11 +151,12 @@ export default function AudioRecorder({
     }
 
     if (mediaRecorderRef.current) {
+      const finalDuration = timer; // Capture duration before stopping
       mediaRecorderRef.current.onstop = async () => {
         mediaRecorderRef.current?.stream.getTracks().forEach(track => track.stop());
         
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        onRecordingComplete(audioBlob, transcript);
+        onRecordingComplete(audioBlob, transcript, finalDuration);
       };
 
       mediaRecorderRef.current.stop();

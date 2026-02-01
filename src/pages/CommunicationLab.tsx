@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Mic, Minimize2, TrendingUp, ArrowRight } from 'lucide-react';
+import { Mic, Minimize2, TrendingUp, ArrowRight, FileText } from 'lucide-react';
 import AnswerCompressionMode from '../components/communication/AnswerCompressionMode';
 import ExecutivePresenceMode from '../components/communication/ExecutivePresenceMode';
+import GenerateScriptMode from '../components/communication/GenerateScriptMode';
 
-type Mode = 'landing' | 'compression' | 'presence';
+type Mode = 'landing' | 'compression' | 'presence' | 'generate-script';
 
 export default function CommunicationLab() {
   const [currentMode, setCurrentMode] = useState<Mode>('landing');
@@ -14,6 +15,10 @@ export default function CommunicationLab() {
 
   if (currentMode === 'presence') {
     return <ExecutivePresenceMode onBack={() => setCurrentMode('landing')} />;
+  }
+
+  if (currentMode === 'generate-script') {
+    return <GenerateScriptMode onBack={() => setCurrentMode('landing')} />;
   }
 
   return (
@@ -38,7 +43,45 @@ export default function CommunicationLab() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Generate Script Mode */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="p-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg">
+              <FileText className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Generate Script</h2>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 mb-4">
+            Get AI-generated practice scripts with structured guidance. Choose from:
+          </p>
+          <ul className="space-y-2 mb-6 text-sm text-slate-600 dark:text-slate-400">
+            <li className="flex items-start">
+              <span className="text-indigo-500 mr-2">•</span>
+              <span>PM Interview Questions</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-indigo-500 mr-2">•</span>
+              <span>Presentation Prompts</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-indigo-500 mr-2">•</span>
+              <span>STAR Scenarios</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-indigo-500 mr-2">•</span>
+              <span>Elevator Pitches</span>
+            </li>
+          </ul>
+          <button
+            onClick={() => setCurrentMode('generate-script')}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all font-medium"
+          >
+            <span>Generate Script</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+
         {/* Answer Compression Mode */}
         <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
           <div className="flex items-center space-x-3 mb-4">

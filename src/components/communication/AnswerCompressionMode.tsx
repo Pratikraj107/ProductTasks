@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import AudioRecorder from './AudioRecorder';
 
@@ -13,11 +13,27 @@ interface CompressionFeedback {
   decision_framing: string;
 }
 
-type Stage = 'question' | 'recording' | 'compressing' | 'feedback';
+type Stage = 'question' | 'generating-answer' | 'reading' | 'recording' | 'compressing' | 'feedback';
 
-export default function AnswerCompressionMode({ onBack }: { onBack: () => void }) {
-  const [stage, setStage] = useState<Stage>('question');
-  const [question, setQuestion] = useState<string>('');
+interface ScriptData {
+  script_content: string;
+  script_type: string;
+  sections?: Array<{ heading: string; content: string; subsections?: string[] }>;
+  key_points?: string[];
+  tips?: string[];
+  title?: string;
+}
+
+interface AnswerCompressionModeProps {
+  onBack: () => void;
+  customQuestion?: string;
+  scriptData?: ScriptData;
+}
+
+export default function AnswerCompressionMode({ onBack, customQuestion, scriptData }: AnswerCompressionModeProps) {
+  const [stage, setStage] = useState<Stage>(scriptData ? 'generating-answer' : (customQuestion ? 'recording' : 'question'));
+  const [question, setQuestion] = useState<string>(customQuestion || '');
+  const [completeAnswer, setCompleteAnswer] = useState<string>('');
   const [originalAnswer, setOriginalAnswer] = useState<string>('');
   const [feedback, setFeedback] = useState<CompressionFeedback | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +53,56 @@ export default function AnswerCompressionMode({ onBack }: { onBack: () => void }
     setQuestion(pmQuestions[randomIndex]);
   };
 
-  const handleRecordingComplete = async (audioBlob: Blob, transcript: string) => {
+  // Generate complete answer when scriptData is provided
+  useEffect(() => {
+    if (scriptData && stage === 'generating-answer') {
+      generateCompleteAnswer();
+    }
+  }, [scriptData, stage]);
+
+  const generateCompleteAnswer = async () => {
+    if (!scriptData) return;
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/communication/generate-complete-answer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          script_content: scriptData.script_content,
+          script_type: scriptData.script_type,
+          sections: scriptData.sections || [],
+          key_points: scriptData.key_points || [],
+          tips: scriptData.tips || [],
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 0 || response.status === 503) {
+          throw new Error('Backend server is not available. Please make sure the backend server is running on port 8000.');
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to generate complete answer');
+      }
+
+      const data = await response.json();
+      setCompleteAnswer(data.complete_answer);
+      setQuestion(scriptData.script_content); // Set question for compression
+      setStage('reading');
+    } catch (err: any) {
+      console.error('Error generating complete answer:', err);
+      setError(err.message || 'Failed to generate complete answer. Please try again.');
+      setStage('question');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRecordingComplete = async (audioBlob: Blob, transcript: string, duration: number) => {
     setOriginalAnswer(transcript);
     setStage('compressing');
     setLoading(true);
@@ -174,6 +239,62 @@ export default function AnswerCompressionMode({ onBack }: { onBack: () => void }
     );
   }
 
+  if (stage === 'generating-answer') {
+    return (
+      <div className="p-6 md:p-8 max-w-4xl mx-auto">
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-200 dark:border-slate-700 text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg font-semibold text-slate-900 dark:text-white">Generating complete answer...</p>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">Creating a full script based on the structure and guidance</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === 'reading') {
+    return (
+      <div className="p-6 md:p-8 max-w-4xl mx-auto">
+        <button
+          onClick={onBack}
+          className="flex items-center space-x-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-6"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Back to Script Review</span>
+        </button>
+
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-200 dark:border-slate-700">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Read This Complete Answer</h2>
+          
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              <strong>📖 Instructions:</strong> Read through this complete answer. When ready, click "Start Recording" and read it aloud. The script will remain visible while you record.
+            </p>
+          </div>
+
+          {/* Complete Answer - Scrollable */}
+          <div className="mb-6 p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border-2 border-blue-200 dark:border-blue-800 max-h-[400px] overflow-y-auto">
+            <div className="text-base leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-wrap">
+              {completeAnswer}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setStage('recording')}
+            className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all font-medium"
+          >
+            <span>Start Recording</span>
+          </button>
+
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-red-600 dark:text-red-400">{error}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (stage === 'recording') {
     return (
       <div className="p-6 md:p-8 max-w-4xl mx-auto">
@@ -182,20 +303,38 @@ export default function AnswerCompressionMode({ onBack }: { onBack: () => void }
           className="flex items-center space-x-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-6"
         >
           <ArrowLeft className="w-5 h-5" />
-          <span>Back to Communication Lab</span>
+          <span>Back to Script Review</span>
         </button>
 
         <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-200 dark:border-slate-700">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Answer the Question</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Read the Answer Aloud</h2>
           
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-6">
-            <p className="text-slate-700 dark:text-slate-300">{question}</p>
-          </div>
-
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
-            Answer this question verbally. Take your time — there's no time limit. 
-            We'll compress it later.
-          </p>
+          {scriptData ? (
+            <>
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <strong>📖 Read this complete answer while recording:</strong>
+                </p>
+              </div>
+              
+              {/* Complete Answer - Visible while recording, scrollable */}
+              <div className="mb-6 p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border-2 border-blue-200 dark:border-blue-800 max-h-[300px] overflow-y-auto">
+                <div className="text-base leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-wrap">
+                  {completeAnswer}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-6">
+                <p className="text-slate-700 dark:text-slate-300">{question}</p>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mb-6">
+                Answer this question verbally. Take your time — there's no time limit. 
+                We'll compress it later.
+              </p>
+            </>
+          )}
 
           <AudioRecorder onRecordingComplete={handleRecordingComplete} />
 
