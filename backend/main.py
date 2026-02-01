@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import os
 from pathlib import Path
 from agents.interview_feedback import InterviewFeedbackAgent
+from agents.communication_analyzer import CommunicationAnalyzer
 from pydantic import BaseModel
 
 # Import usage tracker router
@@ -124,6 +125,15 @@ except Exception as e:
     print("Make sure OPENAI_API_KEY is set in .env file")
     interview_agent_initialized = False
     interview_agent = None
+
+try:
+    communication_analyzer = CommunicationAnalyzer()
+    communication_analyzer_initialized = True
+except Exception as e:
+    print(f"Warning: Could not initialize communication analyzer: {e}")
+    print("Make sure OPENAI_API_KEY is set in .env file")
+    communication_analyzer_initialized = False
+    communication_analyzer = None
 
 # Include usage tracker router if available
 if USAGE_TRACKER_AVAILABLE:
@@ -270,6 +280,68 @@ async def get_interview_feedback(request: InterviewFeedbackRequest):
     except Exception as e:
         print(f"Error getting interview feedback: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting interview feedback: {str(e)}")
+
+# Communication Lab endpoints
+class CompressAnswerRequest(BaseModel):
+    question: str
+    answer: str
+
+class AnalyzePresenceRequest(BaseModel):
+    prompt: str
+    transcript: str
+    audio_duration: float = 0
+
+@app.post("/api/communication/compress-answer")
+async def compress_answer(request: CompressAnswerRequest):
+    """
+    Compress an answer to 2 minutes and 60 seconds, analyzing improvements
+    """
+    if not communication_analyzer_initialized:
+        raise HTTPException(
+            status_code=503,
+            detail="Communication analyzer not initialized. Please check OPENAI_API_KEY in .env file"
+        )
+    
+    try:
+        if not request.question or not request.answer:
+            raise HTTPException(status_code=400, detail="Question and answer are required")
+        
+        result = await communication_analyzer.compress_answer(request.question, request.answer)
+        return JSONResponse(content=result)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error compressing answer: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error compressing answer: {str(e)}")
+
+@app.post("/api/communication/analyze-presence")
+async def analyze_presence(request: AnalyzePresenceRequest):
+    """
+    Analyze speech patterns for executive presence
+    """
+    if not communication_analyzer_initialized:
+        raise HTTPException(
+            status_code=503,
+            detail="Communication analyzer not initialized. Please check OPENAI_API_KEY in .env file"
+        )
+    
+    try:
+        if not request.prompt or not request.transcript:
+            raise HTTPException(status_code=400, detail="Prompt and transcript are required")
+        
+        result = await communication_analyzer.analyze_presence(
+            request.prompt,
+            request.transcript,
+            request.audio_duration
+        )
+        return JSONResponse(content=result)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error analyzing presence: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error analyzing presence: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

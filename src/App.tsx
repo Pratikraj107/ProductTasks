@@ -4,7 +4,9 @@ import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import Home from './pages/Home';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import DashboardLayout from './components/DashboardLayout';
+import AdminLayout from './components/AdminLayout';
 
 // Simple SPA Router
 function App() {
@@ -28,6 +30,17 @@ function App() {
 
   // Render the appropriate component based on current path
   const renderPage = () => {
+    // Check if path starts with /admin
+    if (currentPath.startsWith('/admin')) {
+      return (
+        <AuthProvider navigate={navigate}>
+          <AdminRoute>
+            <AdminLayout onNavigate={navigate} />
+          </AdminRoute>
+        </AuthProvider>
+      );
+    }
+
     switch (currentPath) {
       case '/signin':
         return (

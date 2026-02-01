@@ -11,6 +11,7 @@ import Resources from '../pages/Resources';
 import Tools from '../pages/Tools';
 import Interview from '../pages/Interview';
 import CategoryDetail from '../pages/CategoryDetail';
+import CommunicationLab from '../pages/CommunicationLab';
 import Community from '../pages/Community';
 import Profile from '../pages/Profile';
 import Resume from '../pages/Resume';
@@ -148,6 +149,8 @@ export default function DashboardLayout({ onNavigate }: DashboardLayoutProps) {
           );
         }
         return <Interview onNavigateToCategory={handleCategoryClick} />;
+      case 'communication':
+        return <CommunicationLab />;
       case 'community':
         return <Community />;
       case 'resume':

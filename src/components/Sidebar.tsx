@@ -13,7 +13,8 @@ import {
   Wrench,
   FileText,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Mic
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -37,6 +38,7 @@ export default function Sidebar({ currentPage, onNavigate, isCollapsed = false, 
     { id: 'topics', label: 'Topics', icon: <BookOpen className="w-4 h-4 md:w-5 md:h-5" /> },
     { id: 'tasks', label: 'Roadmap', icon: <CheckSquare className="w-4 h-4 md:w-5 md:h-5" /> },
     { id: 'interview', label: 'Mock Interview', icon: <MessageSquare className="w-4 h-4 md:w-5 md:h-5" /> },
+    { id: 'communication', label: 'Communication Lab', icon: <Mic className="w-4 h-4 md:w-5 md:h-5" /> },
     // { id: 'tools', label: 'Tools', icon: <Wrench className="w-4 h-4 md:w-5 md:h-5" /> },
     { id: 'resources', label: 'Product Resources', icon: <Link className="w-4 h-4 md:w-5 md:h-5" /> },
 
