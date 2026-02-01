@@ -85,11 +85,21 @@ class AudioAnalyzer:
             pause_analysis = self._analyze_pauses(transcript_data, duration)
             
             # Combine all analyses
+            # Helper to convert numpy types to Python native types
+            def to_float(value):
+                """Convert numpy scalar/array to Python float"""
+                if isinstance(value, np.ndarray):
+                    return float(value.item() if value.size == 1 else value[0])
+                elif isinstance(value, (np.integer, np.floating)):
+                    return float(value)
+                else:
+                    return float(value)
+            
             analysis = {
                 **features,
                 **pause_analysis,
-                "duration": duration,
-                "sample_rate": sr
+                "duration": to_float(duration),
+                "sample_rate": int(to_float(sr))
             }
             
             return analysis
@@ -100,19 +110,29 @@ class AudioAnalyzer:
     def _extract_audio_features(self, y: np.ndarray, sr: int, duration: float) -> Dict[str, Any]:
         """Extract audio features for speech analysis"""
         
+        # Helper function to safely convert numpy types to Python native types
+        def to_float(value):
+            """Convert numpy scalar/array to Python float"""
+            if isinstance(value, np.ndarray):
+                return float(value.item() if value.size == 1 else value[0])
+            elif isinstance(value, (np.integer, np.floating)):
+                return float(value)
+            else:
+                return float(value)
+        
         # 1. Tone/Emotion Analysis (Pitch and Energy)
         pitch = librosa.yin(y, fmin=50, fmax=400)
         pitch_clean = pitch[pitch > 0]  # Remove invalid pitches
         
         # Energy (loudness)
         rms = librosa.feature.rms(y=y)[0]
-        energy_mean = np.mean(rms)
-        energy_std = np.std(rms)
+        energy_mean = to_float(np.mean(rms))
+        energy_std = to_float(np.std(rms))
         
         # Pitch statistics
-        pitch_mean = np.mean(pitch_clean) if len(pitch_clean) > 0 else 0
-        pitch_std = np.std(pitch_clean) if len(pitch_clean) > 0 else 0
-        pitch_range = np.max(pitch_clean) - np.min(pitch_clean) if len(pitch_clean) > 0 else 0
+        pitch_mean = to_float(np.mean(pitch_clean)) if len(pitch_clean) > 0 else 0.0
+        pitch_std = to_float(np.std(pitch_clean)) if len(pitch_clean) > 0 else 0.0
+        pitch_range = to_float(np.max(pitch_clean) - np.min(pitch_clean)) if len(pitch_clean) > 0 else 0.0
         
         # Tone score: Higher variation = more engaging (0-100)
         pitch_variation_score = min(100, max(0, (pitch_std / pitch_mean * 100) if pitch_mean > 0 else 0))
@@ -124,14 +144,15 @@ class AudioAnalyzer:
         # 2. Speaking Pace/Rhythm
         # Tempo estimation
         tempo, beats = librosa.beat.beat_track(y=y, sr=sr)
+        tempo = to_float(tempo)
         
         # Speaking rate (syllables per second approximation)
         # Use zero-crossing rate as proxy for speech rate
         zcr = librosa.feature.zero_crossing_rate(y)[0]
-        zcr_mean = np.mean(zcr)
+        zcr_mean = to_float(np.mean(zcr))
         
         # Pace consistency (lower std = more consistent)
-        zcr_std = np.std(zcr)
+        zcr_std = to_float(np.std(zcr))
         pace_consistency_score = max(0, 100 - (zcr_std / zcr_mean * 100) if zcr_mean > 0 else 0)
         
         pace_assessment = self._assess_pace(tempo, zcr_mean, pace_consistency_score)
@@ -139,12 +160,12 @@ class AudioAnalyzer:
         # 3. Pronunciation/Clarity
         # Spectral centroid (brightness/clarity)
         spectral_centroids = librosa.feature.spectral_centroid(y=y, sr=sr)[0]
-        centroid_mean = np.mean(spectral_centroids)
-        centroid_std = np.std(spectral_centroids)
+        centroid_mean = to_float(np.mean(spectral_centroids))
+        centroid_std = to_float(np.std(spectral_centroids))
         
         # Spectral rolloff (high frequency content)
         rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
-        rolloff_mean = np.mean(rolloff)
+        rolloff_mean = to_float(np.mean(rolloff))
         
         # Clarity score (higher centroid and rolloff = clearer)
         clarity_score = min(100, max(0, (centroid_mean / 5000 * 50) + (rolloff_mean / 10000 * 50)))
@@ -159,10 +180,11 @@ class AudioAnalyzer:
         # Calculate pitch changes (intonation)
         if len(pitch_contour_clean) > 1:
             pitch_changes = np.abs(np.diff(pitch_contour_clean))
-            intonation_variation = np.mean(pitch_changes)
+            intonation_variation = to_float(np.mean(pitch_changes))
             intonation_score = min(100, max(0, (intonation_variation / 50) * 100))
         else:
-            intonation_score = 0
+            intonation_variation = 0.0
+            intonation_score = 0.0
         
         emphasis_assessment = self._assess_emphasis(intonation_score)
         
@@ -177,44 +199,44 @@ class AudioAnalyzer:
         
         return {
             "tone_and_emotion": {
-                "score": round(tone_score, 1),
-                "pitch_mean": round(float(pitch_mean), 1),
-                "pitch_variation": round(float(pitch_std), 1),
-                "energy_variation": round(float(energy_std), 3),
+                "score": round(to_float(tone_score), 1),
+                "pitch_mean": round(to_float(pitch_mean), 1),
+                "pitch_variation": round(to_float(pitch_std), 1),
+                "energy_variation": round(to_float(energy_std), 3),
                 "assessment": tone_assessment,
-                "strengths": self._get_tone_strengths(tone_score, pitch_variation_score),
-                "improvements": self._get_tone_improvements(tone_score, pitch_variation_score)
+                "strengths": self._get_tone_strengths(to_float(tone_score), to_float(pitch_variation_score)),
+                "improvements": self._get_tone_improvements(to_float(tone_score), to_float(pitch_variation_score))
             },
             "pace_and_rhythm": {
-                "score": round(pace_consistency_score, 1),
-                "tempo": round(float(tempo), 1),
-                "consistency": round(pace_consistency_score, 1),
+                "score": round(to_float(pace_consistency_score), 1),
+                "tempo": round(to_float(tempo), 1),
+                "consistency": round(to_float(pace_consistency_score), 1),
                 "assessment": pace_assessment,
-                "strengths": self._get_pace_strengths(pace_consistency_score),
-                "improvements": self._get_pace_improvements(pace_consistency_score, tempo)
+                "strengths": self._get_pace_strengths(to_float(pace_consistency_score)),
+                "improvements": self._get_pace_improvements(to_float(pace_consistency_score), to_float(tempo))
             },
             "pronunciation_and_clarity": {
-                "score": round(clarity_score, 1),
-                "spectral_centroid": round(float(centroid_mean), 1),
-                "high_frequency_content": round(float(rolloff_mean), 1),
+                "score": round(to_float(clarity_score), 1),
+                "spectral_centroid": round(to_float(centroid_mean), 1),
+                "high_frequency_content": round(to_float(rolloff_mean), 1),
                 "assessment": clarity_assessment,
-                "strengths": self._get_clarity_strengths(clarity_score),
-                "improvements": self._get_clarity_improvements(clarity_score)
+                "strengths": self._get_clarity_strengths(to_float(clarity_score)),
+                "improvements": self._get_clarity_improvements(to_float(clarity_score))
             },
             "emphasis_and_intonation": {
-                "score": round(intonation_score, 1),
-                "pitch_variation": round(float(intonation_variation) if len(pitch_contour_clean) > 1 else 0, 1),
+                "score": round(to_float(intonation_score), 1),
+                "pitch_variation": round(to_float(intonation_variation) if len(pitch_contour_clean) > 1 else 0.0, 1),
                 "assessment": emphasis_assessment,
-                "strengths": self._get_emphasis_strengths(intonation_score),
-                "improvements": self._get_emphasis_improvements(intonation_score)
+                "strengths": self._get_emphasis_strengths(to_float(intonation_score)),
+                "improvements": self._get_emphasis_improvements(to_float(intonation_score))
             },
             "voice_quality": {
-                "score": round(voice_quality_score, 1),
-                "volume_score": round(volume_score, 1),
-                "clarity_score": round(clarity_score, 1),
+                "score": round(to_float(voice_quality_score), 1),
+                "volume_score": round(to_float(volume_score), 1),
+                "clarity_score": round(to_float(clarity_score), 1),
                 "assessment": voice_quality_assessment,
-                "strengths": self._get_voice_quality_strengths(voice_quality_score),
-                "improvements": self._get_voice_quality_improvements(voice_quality_score, volume_score, clarity_score)
+                "strengths": self._get_voice_quality_strengths(to_float(voice_quality_score)),
+                "improvements": self._get_voice_quality_improvements(to_float(voice_quality_score), to_float(volume_score), to_float(clarity_score))
             }
         }
     
@@ -277,22 +299,32 @@ class AudioAnalyzer:
                 if pause_duration > 0.5:  # Long pause (>500ms)
                     long_pauses += 1
         
+        # Helper function to safely convert numpy types
+        def to_float(value):
+            """Convert numpy scalar/array to Python float"""
+            if isinstance(value, np.ndarray):
+                return float(value.item() if value.size == 1 else value[0])
+            elif isinstance(value, (np.integer, np.floating)):
+                return float(value)
+            else:
+                return float(value)
+        
         if pauses:
-            avg_pause = np.mean(pauses)
-            pause_score = self._score_pauses(len(pauses), avg_pause, long_pauses, duration)
+            avg_pause = to_float(np.mean(pauses))
+            pause_score = self._score_pauses(len(pauses), avg_pause, long_pauses, to_float(duration))
         else:
-            avg_pause = 0
+            avg_pause = 0.0
             pause_score = 30.0  # Low score if no pauses detected (might be too rushed)
         
         return {
             "pauses": {
-                "score": round(pause_score, 1),
+                "score": round(to_float(pause_score), 1),
                 "total_pauses": len(pauses),
-                "average_pause_duration": round(float(avg_pause), 3) if pauses else 0,
+                "average_pause_duration": round(to_float(avg_pause), 3) if pauses else 0.0,
                 "long_pauses": long_pauses,
-                "assessment": self._assess_pauses(len(pauses), avg_pause, long_pauses, duration),
-                "strengths": self._get_pause_strengths(pause_score, len(pauses), long_pauses),
-                "improvements": self._get_pause_improvements(pause_score, len(pauses), long_pauses, avg_pause)
+                "assessment": self._assess_pauses(len(pauses), to_float(avg_pause), long_pauses, to_float(duration)),
+                "strengths": self._get_pause_strengths(to_float(pause_score), len(pauses), long_pauses),
+                "improvements": self._get_pause_improvements(to_float(pause_score), len(pauses), long_pauses, to_float(avg_pause))
             }
         }
     
@@ -354,6 +386,8 @@ class AudioAnalyzer:
             return f"Pause pattern is acceptable but could be more natural. {pause_count} pauses detected."
     
     def _score_pauses(self, pause_count: int, avg_pause: float, long_pauses: int, duration: float) -> float:
+        # Ensure duration is a Python float
+        duration = float(duration) if not isinstance(duration, (int, float)) else duration
         pause_rate = pause_count / duration if duration > 0 else 0
         
         # Ideal: 0.3-0.8 pauses per second, avg pause 0.2-0.4s, <20% long pauses
