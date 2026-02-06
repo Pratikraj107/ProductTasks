@@ -402,6 +402,14 @@ async def analyze_presence_with_audio(
         if len(audio_bytes) == 0:
             raise HTTPException(status_code=400, detail="Audio file is empty")
         
+        # File size validation (15MB max - allows for 10 min audio at reasonable quality)
+        MAX_FILE_SIZE = 15 * 1024 * 1024  # 15MB
+        if len(audio_bytes) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Audio file too large ({len(audio_bytes) / (1024*1024):.1f}MB). Maximum size is 15MB. Please use a shorter recording or lower quality."
+            )
+        
         # Perform audio analysis
         audio_analysis = await audio_analyzer.analyze_audio(
             audio_bytes, 

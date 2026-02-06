@@ -26,6 +26,10 @@ class AudioAnalyzer:
     - Voice quality (volume, clarity)
     """
     
+    # Constants for memory optimization
+    MAX_DURATION_SECONDS = 600  # 10 minutes max
+    TARGET_SAMPLE_RATE = 16000  # 16kHz is sufficient for speech analysis and reduces memory by ~75%
+    
     def __init__(self):
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
@@ -36,7 +40,12 @@ class AudioAnalyzer:
         """
         Analyze audio file for speech delivery characteristics.
         Returns detailed analysis with scores (0-100) for each metric.
+        Memory optimized: downsamples to 16kHz and limits duration to 10 minutes.
         """
+        audio_file = None
+        wav_buffer = None
+        audio_segment = None
+        
         try:
             # Convert WebM/Opus to WAV format that librosa can read
             audio_file = io.BytesIO(audio_bytes)
@@ -52,8 +61,18 @@ class AudioAnalyzer:
                         wav_buffer = io.BytesIO()
                         audio_segment.export(wav_buffer, format="wav")
                         wav_buffer.seek(0)
-                        # Now load with librosa
-                        y, sr = librosa.load(wav_buffer, sr=None, duration=None)
+                        # Load with librosa and downsample to 16kHz for memory efficiency
+                        # Limit duration to MAX_DURATION_SECONDS
+                        y, sr = librosa.load(
+                            wav_buffer, 
+                            sr=self.TARGET_SAMPLE_RATE,  # Downsample to 16kHz
+                            duration=self.MAX_DURATION_SECONDS  # Limit to 10 minutes
+                        )
+                        # Clean up intermediate buffers
+                        wav_buffer.close()
+                        wav_buffer = None
+                        del audio_segment
+                        audio_segment = None
                     except Exception as pydub_error:
                         print(f"Warning: pydub conversion failed: {pydub_error}")
                         raise Exception(f"Could not convert WebM audio file. Error: {pydub_error}. Make sure ffmpeg is installed: https://ffmpeg.org/download.html")
@@ -62,7 +81,12 @@ class AudioAnalyzer:
             else:
                 # Try direct loading for other formats (WAV, MP3, etc.)
                 try:
-                    y, sr = librosa.load(audio_file, sr=None, duration=None)
+                    # Downsample to 16kHz and limit duration for memory efficiency
+                    y, sr = librosa.load(
+                        audio_file, 
+                        sr=self.TARGET_SAMPLE_RATE,  # Downsample to 16kHz
+                        duration=self.MAX_DURATION_SECONDS  # Limit to 10 minutes
+                    )
                 except Exception as e:
                     # Fallback to soundfile
                     audio_file.seek(0)
@@ -70,13 +94,35 @@ class AudioAnalyzer:
                         y, sr = sf.read(audio_file)
                         if len(y.shape) > 1:
                             y = np.mean(y, axis=1)  # Convert to mono
+                        # Resample to 16kHz if needed
+                        if sr != self.TARGET_SAMPLE_RATE:
+                            y = librosa.resample(y, orig_sr=sr, target_sr=self.TARGET_SAMPLE_RATE)
+                            sr = self.TARGET_SAMPLE_RATE
+                        # Limit duration
+                        max_samples = int(self.MAX_DURATION_SECONDS * sr)
+                        if len(y) > max_samples:
+                            y = y[:max_samples]
                     except Exception as e2:
                         raise Exception(f"Could not load audio file. librosa error: {e}, soundfile error: {e2}")
             
             duration = len(y) / sr
             
+            # Validate duration (should already be limited, but double-check)
+            if duration > self.MAX_DURATION_SECONDS:
+                raise Exception(f"Audio duration ({duration:.1f}s) exceeds maximum allowed duration ({self.MAX_DURATION_SECONDS}s). Please use a shorter recording.")
+            
+            # Clean up audio_file buffer
+            if audio_file:
+                audio_file.close()
+                audio_file = None
+            
             # Extract features
             features = self._extract_audio_features(y, sr, duration)
+            
+            # Explicitly delete audio array after feature extraction to free memory
+            del y
+            import gc
+            gc.collect()  # Force garbage collection
             
             # Get transcription with timestamps for pause analysis
             transcript_data = await self._get_transcription_with_timestamps(audio_bytes, filename)
@@ -106,9 +152,26 @@ class AudioAnalyzer:
             
         except Exception as e:
             raise Exception(f"Error analyzing audio: {str(e)}")
+        finally:
+            # Ensure cleanup of any remaining buffers
+            if audio_file:
+                try:
+                    audio_file.close()
+                except:
+                    pass
+            if wav_buffer:
+                try:
+                    wav_buffer.close()
+                except:
+                    pass
+            if audio_segment:
+                try:
+                    del audio_segment
+                except:
+                    pass
     
     def _extract_audio_features(self, y: np.ndarray, sr: int, duration: float) -> Dict[str, Any]:
-        """Extract audio features for speech analysis"""
+        """Extract audio features for speech analysis - memory optimized"""
         
         # Helper function to safely convert numpy types to Python native types
         def to_float(value):
@@ -121,6 +184,7 @@ class AudioAnalyzer:
                 return float(value)
         
         # 1. Tone/Emotion Analysis (Pitch and Energy)
+        # Calculate pitch once and reuse for both tone and emphasis analysis
         pitch = librosa.yin(y, fmin=50, fmax=400)
         pitch_clean = pitch[pitch > 0]  # Remove invalid pitches
         
@@ -128,6 +192,9 @@ class AudioAnalyzer:
         rms = librosa.feature.rms(y=y)[0]
         energy_mean = to_float(np.mean(rms))
         energy_std = to_float(np.std(rms))
+        
+        # Clean up rms array after extracting values
+        del rms
         
         # Pitch statistics
         pitch_mean = to_float(np.mean(pitch_clean)) if len(pitch_clean) > 0 else 0.0
@@ -145,6 +212,7 @@ class AudioAnalyzer:
         # Tempo estimation
         tempo, beats = librosa.beat.beat_track(y=y, sr=sr)
         tempo = to_float(tempo)
+        del beats  # Clean up beats array
         
         # Speaking rate (syllables per second approximation)
         # Use zero-crossing rate as proxy for speech rate
@@ -154,6 +222,7 @@ class AudioAnalyzer:
         # Pace consistency (lower std = more consistent)
         zcr_std = to_float(np.std(zcr))
         pace_consistency_score = max(0, 100 - (zcr_std / zcr_mean * 100) if zcr_mean > 0 else 0)
+        del zcr  # Clean up zcr array
         
         pace_assessment = self._assess_pace(tempo, zcr_mean, pace_consistency_score)
         
@@ -162,10 +231,12 @@ class AudioAnalyzer:
         spectral_centroids = librosa.feature.spectral_centroid(y=y, sr=sr)[0]
         centroid_mean = to_float(np.mean(spectral_centroids))
         centroid_std = to_float(np.std(spectral_centroids))
+        del spectral_centroids  # Clean up
         
         # Spectral rolloff (high frequency content)
         rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
         rolloff_mean = to_float(np.mean(rolloff))
+        del rolloff  # Clean up
         
         # Clarity score (higher centroid and rolloff = clearer)
         clarity_score = min(100, max(0, (centroid_mean / 5000 * 50) + (rolloff_mean / 10000 * 50)))
@@ -173,23 +244,27 @@ class AudioAnalyzer:
         clarity_assessment = self._assess_clarity(clarity_score, centroid_mean, rolloff_mean)
         
         # 4. Emphasis and Intonation
-        # Pitch contour analysis
-        pitch_contour = librosa.yin(y, fmin=50, fmax=400)
-        pitch_contour_clean = pitch_contour[pitch_contour > 0]
+        # Reuse pitch calculation from step 1 (already computed above)
+        pitch_contour_clean = pitch_clean  # Reuse the same pitch_clean array
         
         # Calculate pitch changes (intonation)
         if len(pitch_contour_clean) > 1:
             pitch_changes = np.abs(np.diff(pitch_contour_clean))
             intonation_variation = to_float(np.mean(pitch_changes))
             intonation_score = min(100, max(0, (intonation_variation / 50) * 100))
+            del pitch_changes  # Clean up
         else:
             intonation_variation = 0.0
             intonation_score = 0.0
         
+        # Clean up pitch arrays
+        del pitch
+        del pitch_clean
+        
         emphasis_assessment = self._assess_emphasis(intonation_score)
         
         # 5. Voice Quality (Volume and Clarity)
-        # Volume (RMS energy)
+        # Volume (RMS energy) - reuse energy_mean from step 1
         volume_score = min(100, max(0, (energy_mean / 0.1) * 100))  # Normalize to 0-100
         
         # Overall voice quality
