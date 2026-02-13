@@ -1021,6 +1021,8 @@ export default function MockInterviewModal({ question, questionId, questionIndex
               </div>
             </div>
           )}
+            </>
+          )}
 
           {/* Error Message (Traditional Mode) */}
           {interviewMode === 'traditional' && error && (
