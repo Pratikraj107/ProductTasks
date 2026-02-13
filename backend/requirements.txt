@@ -13,4 +13,6 @@ soundfile==0.12.1
 scipy==1.11.4
 numpy==1.24.3
 pydub==0.25.1
+langgraph>=0.0.20
+elevenlabs>=0.2.27
 

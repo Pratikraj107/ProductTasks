@@ -8,6 +8,15 @@ from agents.interview_feedback import InterviewFeedbackAgent
 from agents.communication_analyzer import CommunicationAnalyzer
 from agents.script_generator import ScriptGenerator
 from agents.audio_analyzer import AudioAnalyzer
+
+# Try to import InterviewAgent (AI Interviewer with LangGraph)
+try:
+    from agents.interview_agent import InterviewAgent
+    INTERVIEW_AGENT_AVAILABLE = True
+except Exception as e:
+    print(f"Warning: InterviewAgent not available: {e}")
+    InterviewAgent = None
+    INTERVIEW_AGENT_AVAILABLE = False
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
@@ -146,6 +155,20 @@ except Exception as e:
     print("Make sure OPENAI_API_KEY is set and librosa/soundfile are installed")
     audio_analyzer_initialized = False
     audio_analyzer = None
+
+# Initialize AI Interviewer Agent (LangGraph)
+if INTERVIEW_AGENT_AVAILABLE:
+    try:
+        ai_interviewer = InterviewAgent()
+        ai_interviewer_initialized = True
+    except Exception as e:
+        print(f"Warning: Could not initialize AI interviewer agent: {e}")
+        print("Make sure OPENAI_API_KEY is set. ElevenLabs API key is optional.")
+        ai_interviewer_initialized = False
+        ai_interviewer = None
+else:
+    ai_interviewer_initialized = False
+    ai_interviewer = None
 
 try:
     script_generator = ScriptGenerator()
@@ -301,6 +324,111 @@ async def get_interview_feedback(request: InterviewFeedbackRequest):
     except Exception as e:
         print(f"Error getting interview feedback: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting interview feedback: {str(e)}")
+
+# AI Interviewer endpoints (LangGraph-based conversational interview)
+class StartInterviewRequest(BaseModel):
+    question: str
+
+class ProcessAnswerRequest(BaseModel):
+    session_state: Dict[str, Any]  # Current interview state
+    user_answer: str  # Transcribed user answer
+
+@app.post("/api/interview/ai/start")
+async def start_ai_interview(request: StartInterviewRequest):
+    """
+    Start a new AI interviewer session
+    Returns initial question with audio
+    """
+    if not ai_interviewer_initialized:
+        raise HTTPException(
+            status_code=503,
+            detail="AI interviewer not initialized. Please check OPENAI_API_KEY in .env file"
+        )
+    
+    try:
+        if not request.question:
+            raise HTTPException(status_code=400, detail="Question is required")
+        
+        # Start interview session
+        result = await ai_interviewer.start_interview(request.question)
+        
+        # Convert audio bytes to base64 for JSON response
+        audio_base64 = None
+        if result.get("audio_data"):
+            import base64
+            audio_base64 = base64.b64encode(result["audio_data"]).decode('utf-8')
+        
+        return JSONResponse(content={
+            "question": result["question"],
+            "interviewer_response": result["interviewer_response"],
+            "audio_base64": audio_base64,
+            "conversation_history": result["conversation_history"],
+            "current_stage": result["current_stage"],
+            "session_state": {
+                "question": result["question"],
+                "conversation_history": result["conversation_history"],
+                "current_stage": result["current_stage"],
+                "follow_up_count": 0,
+                "interview_complete": False
+            }
+        })
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error starting AI interview: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error starting AI interview: {str(e)}")
+
+@app.post("/api/interview/ai/process")
+async def process_ai_interview_answer(request: ProcessAnswerRequest):
+    """
+    Process user's answer and get next interviewer response
+    """
+    if not ai_interviewer_initialized:
+        raise HTTPException(
+            status_code=503,
+            detail="AI interviewer not initialized. Please check OPENAI_API_KEY in .env file"
+        )
+    
+    try:
+        if not request.user_answer:
+            raise HTTPException(status_code=400, detail="User answer is required")
+        
+        if not request.session_state:
+            raise HTTPException(status_code=400, detail="Session state is required")
+        
+        # Process user response
+        result = await ai_interviewer.process_user_response(
+            request.session_state,
+            request.user_answer
+        )
+        
+        # Convert audio bytes to base64
+        audio_base64 = None
+        if result.get("audio_data"):
+            import base64
+            audio_base64 = base64.b64encode(result["audio_data"]).decode('utf-8')
+        
+        return JSONResponse(content={
+            "interviewer_response": result["interviewer_response"],
+            "audio_base64": audio_base64,
+            "conversation_history": result["conversation_history"],
+            "current_stage": result["current_stage"],
+            "interview_complete": result.get("interview_complete", False),
+            "session_state": {
+                "question": result["question"],
+                "conversation_history": result["conversation_history"],
+                "current_stage": result["current_stage"],
+                "follow_up_count": result.get("follow_up_count", 0),
+                "interview_complete": result.get("interview_complete", False)
+            }
+        })
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error processing AI interview answer: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing AI interview answer: {str(e)}")
 
 # Communication Lab endpoints
 class CompressAnswerRequest(BaseModel):
