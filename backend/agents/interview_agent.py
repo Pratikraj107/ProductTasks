@@ -151,21 +151,32 @@ class InterviewAgent:
         
         if not user_answer.strip():
             # No answer provided, ask again
+            response_text = "I didn't catch that. Could you please repeat your answer?"
+            # Generate audio
+            audio_data = None
+            if self.elevenlabs_service:
+                try:
+                    audio_data = await self.elevenlabs_service.text_to_speech(response_text)
+                except Exception as e:
+                    print(f"Warning: Could not generate audio: {e}")
+            
             return {
                 **state,
-                "interviewer_response": "I didn't catch that. Could you please repeat your answer?",
+                "interviewer_response": response_text,
+                "audio_data": audio_data,
                 "current_stage": "listening"
             }
         
-        # Check if user is asking for clarification
-        clarification_check = await self._check_for_clarification(user_answer)
-        
-        if clarification_check["is_clarification"]:
-            return {
-                **state,
-                "clarification_request": user_answer,
-                "current_stage": "clarifying"
-            }
+        # Check if user is asking for clarification (if not already flagged)
+        if not state.get("clarification_request"):
+            clarification_check = await self._check_for_clarification(user_answer)
+            
+            if clarification_check["is_clarification"]:
+                return {
+                    **state,
+                    "clarification_request": user_answer,
+                    "current_stage": "clarifying"
+                }
         
         # Add user answer to conversation history
         conversation_history = state.get("conversation_history", [])
@@ -474,7 +485,8 @@ Answer:"""
     async def process_user_response(
         self, 
         current_state: Dict[str, Any], 
-        user_answer: str
+        user_answer: str,
+        is_clarification_request: bool = False
     ) -> Dict[str, Any]:
         """
         Process user's answer and get next interviewer response
@@ -482,6 +494,7 @@ Answer:"""
         Args:
             current_state: Current interview state
             user_answer: User's transcribed answer
+            is_clarification_request: Explicit flag for clarification requests
             
         Returns:
             Updated state with interviewer response
@@ -492,15 +505,22 @@ Answer:"""
             "conversation_history": current_state.get("conversation_history", []),
             "current_stage": current_state.get("current_stage", "listening"),
             "user_answer": user_answer,
-            "clarification_request": current_state.get("clarification_request"),
+            "clarification_request": user_answer if is_clarification_request else current_state.get("clarification_request"),
             "interviewer_response": current_state.get("interviewer_response", ""),
             "audio_data": current_state.get("audio_data"),
             "follow_up_count": current_state.get("follow_up_count", 0),
             "interview_complete": current_state.get("interview_complete", False)
         }
         
-        # Run workflow
-        result = await self.workflow.ainvoke(state)
+        # If explicit clarification request, route directly to clarification handler
+        if is_clarification_request:
+            # Handle clarification directly
+            clarification_result = await self.handle_clarification(state)
+            # Then ask the question again
+            result = await self.ask_question(clarification_result)
+        else:
+            # Run workflow normally
+            result = await self.workflow.ainvoke(state)
         
         return {
             "question": result["question"],

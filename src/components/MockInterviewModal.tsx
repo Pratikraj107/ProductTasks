@@ -367,7 +367,15 @@ export default function MockInterviewModal({ question, questionId, questionIndex
 
       // Play audio if available
       if (data.audio_base64) {
-        await playAudioFromBase64(data.audio_base64);
+        console.log('Audio received, length:', data.audio_base64.length);
+        try {
+          await playAudioFromBase64(data.audio_base64);
+        } catch (audioErr) {
+          console.error('Error playing audio:', audioErr);
+          // Don't fail the whole interview if audio fails
+        }
+      } else {
+        console.warn('No audio_base64 in response');
       }
 
       setIsProcessingAnswer(false);
@@ -382,48 +390,65 @@ export default function MockInterviewModal({ question, questionId, questionIndex
     return new Promise((resolve, reject) => {
       try {
         setIsAiSpeaking(true);
-        // Try different audio formats
-        const audioFormats = [
-          `data:audio/mpeg;base64,${base64Audio}`,
-          `data:audio/mp3;base64,${base64Audio}`,
-          `data:audio/wav;base64,${base64Audio}`
-        ];
+        console.log('Attempting to play audio, base64 length:', base64Audio.length);
         
-        let audioIndex = 0;
-        const tryNextFormat = () => {
-          if (audioIndex >= audioFormats.length) {
+        // ElevenLabs returns MP3, so try that first
+        const audioUrl = `data:audio/mpeg;base64,${base64Audio}`;
+        const audio = new Audio(audioUrl);
+        audioPlayerRef.current = audio;
+        
+        // Set volume
+        audio.volume = 1.0;
+        
+        audio.oncanplaythrough = () => {
+          console.log('Audio can play through');
+          audio.play().then(() => {
+            console.log('Audio playing successfully');
+          }).catch((err) => {
+            console.error('Error playing audio:', err);
             setIsAiSpeaking(false);
-            console.error('Failed to play audio in any format');
-            reject(new Error('Failed to play audio'));
-            return;
-          }
-          
-          const audio = new Audio(audioFormats[audioIndex]);
-          audioPlayerRef.current = audio;
-          
-          audio.onloadeddata = () => {
-            audio.play().then(() => {
-              console.log('Audio playing successfully');
+            reject(err);
+          });
+        };
+        
+        audio.onloadeddata = () => {
+          console.log('Audio data loaded');
+        };
+        
+        audio.onended = () => {
+          console.log('Audio playback ended');
+          setIsAiSpeaking(false);
+          resolve();
+        };
+        
+        audio.onerror = (e) => {
+          console.error('Audio error:', e, audio.error);
+          setIsAiSpeaking(false);
+          // Try alternative format
+          const audioUrl2 = `data:audio/mp3;base64,${base64Audio}`;
+          const audio2 = new Audio(audioUrl2);
+          audio2.volume = 1.0;
+          audio2.oncanplaythrough = () => {
+            audio2.play().then(() => {
+              console.log('Audio playing with alternative format');
+              audioPlayerRef.current = audio2;
             }).catch((err) => {
-              console.error('Error playing audio:', err);
-              audioIndex++;
-              tryNextFormat();
+              console.error('Alternative format also failed:', err);
+              reject(new Error('Failed to play audio'));
             });
           };
-          
-          audio.onended = () => {
+          audio2.onended = () => {
             setIsAiSpeaking(false);
             resolve();
           };
-          
-          audio.onerror = (e) => {
-            console.error(`Audio format ${audioIndex} failed, trying next...`, e);
-            audioIndex++;
-            tryNextFormat();
+          audio2.onerror = () => {
+            setIsAiSpeaking(false);
+            reject(new Error('Failed to play audio in any format'));
           };
         };
         
-        tryNextFormat();
+        // Load the audio
+        audio.load();
       } catch (err) {
         setIsAiSpeaking(false);
         console.error('Error setting up audio:', err);
@@ -757,7 +782,7 @@ export default function MockInterviewModal({ question, questionId, questionIndex
               {aiSessionState && !aiSessionState.interview_complete && (
                 <div className="space-y-4">
                   {recordingState === 'idle' && !isProcessingAnswer && !isAiSpeaking && (
-                    <div className="flex justify-center">
+                    <div className="flex flex-col items-center space-y-4">
                       <button
                         onClick={startRecording}
                         className="group relative"
@@ -768,6 +793,15 @@ export default function MockInterviewModal({ question, questionId, questionIndex
                           <Mic className="w-6 h-6" />
                           <span>Record Your Answer</span>
                         </div>
+                      </button>
+                      
+                      <button
+                        onClick={requestClarification}
+                        disabled={isProcessingAnswer}
+                        className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                      >
+                        <MessageSquare className="w-5 h-5" />
+                        <span>Ask for Clarification</span>
                       </button>
                     </div>
                   )}

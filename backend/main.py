@@ -332,6 +332,7 @@ class StartInterviewRequest(BaseModel):
 class ProcessAnswerRequest(BaseModel):
     session_state: Dict[str, Any]  # Current interview state
     user_answer: str  # Transcribed user answer
+    is_clarification_request: Optional[bool] = False  # Explicit clarification flag
 
 @app.post("/api/interview/ai/start")
 async def start_ai_interview(request: StartInterviewRequest):
@@ -400,7 +401,8 @@ async def process_ai_interview_answer(request: ProcessAnswerRequest):
         # Process user response
         result = await ai_interviewer.process_user_response(
             request.session_state,
-            request.user_answer
+            request.user_answer,
+            is_clarification_request=request.is_clarification_request or False
         )
         
         # Convert audio bytes to base64
