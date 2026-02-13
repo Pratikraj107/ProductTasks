@@ -382,22 +382,51 @@ export default function MockInterviewModal({ question, questionId, questionIndex
     return new Promise((resolve, reject) => {
       try {
         setIsAiSpeaking(true);
-        const audio = new Audio(`data:audio/mpeg;base64,${base64Audio}`);
-        audioPlayerRef.current = audio;
+        // Try different audio formats
+        const audioFormats = [
+          `data:audio/mpeg;base64,${base64Audio}`,
+          `data:audio/mp3;base64,${base64Audio}`,
+          `data:audio/wav;base64,${base64Audio}`
+        ];
         
-        audio.onended = () => {
-          setIsAiSpeaking(false);
-          resolve();
+        let audioIndex = 0;
+        const tryNextFormat = () => {
+          if (audioIndex >= audioFormats.length) {
+            setIsAiSpeaking(false);
+            console.error('Failed to play audio in any format');
+            reject(new Error('Failed to play audio'));
+            return;
+          }
+          
+          const audio = new Audio(audioFormats[audioIndex]);
+          audioPlayerRef.current = audio;
+          
+          audio.onloadeddata = () => {
+            audio.play().then(() => {
+              console.log('Audio playing successfully');
+            }).catch((err) => {
+              console.error('Error playing audio:', err);
+              audioIndex++;
+              tryNextFormat();
+            });
+          };
+          
+          audio.onended = () => {
+            setIsAiSpeaking(false);
+            resolve();
+          };
+          
+          audio.onerror = (e) => {
+            console.error(`Audio format ${audioIndex} failed, trying next...`, e);
+            audioIndex++;
+            tryNextFormat();
+          };
         };
         
-        audio.onerror = (e) => {
-          setIsAiSpeaking(false);
-          reject(new Error('Failed to play audio'));
-        };
-        
-        audio.play().catch(reject);
+        tryNextFormat();
       } catch (err) {
         setIsAiSpeaking(false);
+        console.error('Error setting up audio:', err);
         reject(err);
       }
     });

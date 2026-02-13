@@ -104,32 +104,36 @@ class InterviewAgent:
         """
         Generate and ask a question (initial or follow-up)
         """
-        # Determine what question to ask
-        if state.get("conversation_history") == []:
-            # First question - use the original question
-            question_text = state["question"]
-            response_text = f"Hi! Thanks for joining. Let's start with this question: {question_text} Take your time and think through your answer."
-        elif state.get("clarification_request"):
-            # This is a clarification response
-            response_text = state.get("interviewer_response", "")
-        else:
-            # Follow-up question
-            response_text = state.get("interviewer_response", "")
+        # Get the response text - it should already be set by previous nodes
+        response_text = state.get("interviewer_response", "")
+        
+        # If no response text yet, generate the initial question
+        if not response_text:
+            if len(state.get("conversation_history", [])) == 0:
+                # First question - use the original question
+                question_text = state["question"]
+                response_text = f"Hi! Thanks for joining. Let's start with this question: {question_text} Take your time and think through your answer."
+            else:
+                # This shouldn't happen, but fallback
+                response_text = state.get("question", "Let's begin the interview.")
         
         # Generate audio if ElevenLabs is available
         audio_data = None
-        if self.elevenlabs_service:
+        if self.elevenlabs_service and response_text:
             try:
                 audio_data = await self.elevenlabs_service.text_to_speech(response_text)
             except Exception as e:
                 print(f"Warning: Could not generate audio: {e}")
+                import traceback
+                traceback.print_exc()
         
-        # Update conversation history
+        # Update conversation history (only if not already added)
         conversation_history = state.get("conversation_history", [])
-        conversation_history.append({
-            "role": "interviewer",
-            "content": response_text
-        })
+        if not conversation_history or conversation_history[-1].get("content") != response_text:
+            conversation_history.append({
+                "role": "interviewer",
+                "content": response_text
+            })
         
         return {
             **state,
@@ -219,8 +223,17 @@ Keep your response concise (2-3 sentences max)."""
                 audio_data = await self.elevenlabs_service.text_to_speech(clarification_response)
             except Exception as e:
                 print(f"Warning: Could not generate audio: {e}")
+                import traceback
+                traceback.print_exc()
         
-        # Add clarification to conversation
+        # Add user's clarification request to conversation if not already there
+        if conversation_history and conversation_history[-1].get("role") != "candidate":
+            conversation_history.append({
+                "role": "candidate",
+                "content": clarification_request
+            })
+        
+        # Add clarification response to conversation
         conversation_history.append({
             "role": "interviewer",
             "content": clarification_response
@@ -356,20 +369,56 @@ Generate your response:"""
     
     async def _check_for_clarification(self, user_input: str) -> Dict[str, Any]:
         """
-        Check if user is asking for clarification
+        Check if user is asking for clarification using GPT for better detection
         """
         clarification_keywords = [
-            "clarify", "clarification", "not sure", "don't understand",
+            "clarify", "clarification", "not sure", "don't understand", "don't know",
             "can you explain", "what do you mean", "could you give an example",
-            "i'm confused", "not clear", "unclear"
+            "i'm confused", "not clear", "unclear", "what does", "what is",
+            "could you clarify", "can you clarify", "i don't understand",
+            "not understand", "help me understand", "explain more"
         ]
         
-        user_lower = user_input.lower()
-        is_clarification = any(keyword in user_lower for keyword in clarification_keywords)
+        user_lower = user_input.lower().strip()
+        
+        # Quick keyword check first
+        is_clarification_keyword = any(keyword in user_lower for keyword in clarification_keywords)
+        
+        # Also check if it's a very short question (likely clarification)
+        is_short_question = len(user_input.split()) < 10 and any(q in user_lower for q in ["what", "how", "can", "could", "why"])
+        
+        # Use GPT for more intelligent detection if keyword check is ambiguous
+        if is_clarification_keyword or is_short_question:
+            try:
+                check_prompt = f"""Is the following user input asking for clarification about an interview question? Answer only "yes" or "no".
+
+User input: "{user_input}"
+
+Answer:"""
+                
+                messages = [
+                    {"role": "system", "content": "You are a classifier. Answer only 'yes' or 'no'."},
+                    {"role": "user", "content": check_prompt}
+                ]
+                
+                response = self.openai_client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=0.1,
+                    max_tokens=10
+                )
+                
+                gpt_answer = response.choices[0].message.content.strip().lower()
+                is_clarification = "yes" in gpt_answer
+            except Exception as e:
+                print(f"Warning: Clarification check failed, using keyword match: {e}")
+                is_clarification = is_clarification_keyword
+        else:
+            is_clarification = False
         
         return {
             "is_clarification": is_clarification,
-            "confidence": 0.8 if is_clarification else 0.2
+            "confidence": 0.9 if is_clarification else 0.1
         }
     
     def _format_conversation_history(self, history: List[Dict[str, str]]) -> str:
@@ -388,27 +437,38 @@ Generate your response:"""
         Returns:
             Initial state with first question
         """
+        # Generate the initial question text
+        question_text = f"Hi! Thanks for joining. Let's start with this question: {question} Take your time and think through your answer."
+        
+        # Generate audio if ElevenLabs is available
+        audio_data = None
+        if self.elevenlabs_service:
+            try:
+                audio_data = await self.elevenlabs_service.text_to_speech(question_text)
+                print(f"Generated audio: {len(audio_data) if audio_data else 0} bytes")
+            except Exception as e:
+                print(f"Warning: Could not generate audio: {e}")
+                import traceback
+                traceback.print_exc()
+        
         initial_state: InterviewState = {
             "question": question,
-            "conversation_history": [],
+            "conversation_history": [{"role": "interviewer", "content": question_text}],
             "current_stage": "asking_question",
             "user_answer": "",
             "clarification_request": None,
-            "interviewer_response": "",
-            "audio_data": None,
+            "interviewer_response": question_text,
+            "audio_data": audio_data,
             "follow_up_count": 0,
             "interview_complete": False
         }
         
-        # Run workflow to get first question
-        result = await self.workflow.ainvoke(initial_state)
-        
         return {
-            "question": result["question"],
-            "interviewer_response": result["interviewer_response"],
-            "audio_data": result.get("audio_data"),
-            "conversation_history": result["conversation_history"],
-            "current_stage": result["current_stage"]
+            "question": initial_state["question"],
+            "interviewer_response": initial_state["interviewer_response"],
+            "audio_data": initial_state.get("audio_data"),
+            "conversation_history": initial_state["conversation_history"],
+            "current_stage": initial_state["current_stage"]
         }
     
     async def process_user_response(

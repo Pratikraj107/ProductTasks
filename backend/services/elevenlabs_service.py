@@ -58,13 +58,10 @@ class ElevenLabsService:
         try:
             voice_id_to_use = voice_id or self.voice_id
             
-            # Generate audio
+            # Generate audio - use the simpler API call
             audio = generate(
                 text=text,
-                voice=Voice(
-                    voice_id=voice_id_to_use,
-                    settings=self.voice_settings
-                ),
+                voice=voice_id_to_use,
                 model="eleven_multilingual_v2"  # Supports multiple languages
             )
             
