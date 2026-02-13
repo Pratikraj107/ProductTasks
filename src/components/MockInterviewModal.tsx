@@ -457,6 +457,83 @@ export default function MockInterviewModal({ question, questionId, questionIndex
     });
   };
 
+  const requestClarification = async () => {
+    if (!aiSessionState) {
+      setError('Please start the interview first');
+      return;
+    }
+
+    try {
+      setIsProcessingAnswer(true);
+      setError(null);
+
+      // Send explicit clarification request
+      const clarificationText = "Can you please clarify the question? I need more information to provide a good answer.";
+
+      // Add clarification request to conversation
+      const userMsg: ConversationMessage = {
+        role: 'candidate',
+        content: clarificationText,
+        timestamp: new Date()
+      };
+      setConversationHistory(prev => [...prev, userMsg]);
+
+      const response = await fetch(`${API_BASE_URL}/api/interview/ai/process`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_state: aiSessionState,
+          user_answer: clarificationText,
+          is_clarification_request: true  // Explicit flag
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to get clarification');
+      }
+
+      const data = await response.json();
+
+      // Update session state
+      setAiSessionState({
+        question: data.session_state.question,
+        conversation_history: [],
+        current_stage: data.session_state.current_stage,
+        follow_up_count: data.session_state.follow_up_count,
+        interview_complete: data.session_state.interview_complete
+      });
+
+      // Add interviewer response to conversation
+      if (data.interviewer_response) {
+        const interviewerMsg: ConversationMessage = {
+          role: 'interviewer',
+          content: data.interviewer_response,
+          timestamp: new Date()
+        };
+        setConversationHistory(prev => [...prev, interviewerMsg]);
+
+        // Play audio if available
+        if (data.audio_base64) {
+          console.log('Clarification audio received');
+          try {
+            await playAudioFromBase64(data.audio_base64);
+          } catch (audioErr) {
+            console.error('Error playing clarification audio:', audioErr);
+          }
+        }
+      }
+
+      setIsProcessingAnswer(false);
+    } catch (err: any) {
+      setError(`Failed to get clarification: ${err.message}`);
+      setIsProcessingAnswer(false);
+      console.error('Error requesting clarification:', err);
+    }
+  };
+
   const processUserAnswer = async (userAnswer: string) => {
     if (!aiSessionState || !userAnswer.trim()) {
       return;
@@ -481,7 +558,8 @@ export default function MockInterviewModal({ question, questionId, questionIndex
         },
         body: JSON.stringify({
           session_state: aiSessionState,
-          user_answer: userAnswer
+          user_answer: userAnswer,
+          is_clarification_request: false
         }),
       });
 
