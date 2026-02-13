@@ -455,12 +455,18 @@ Answer:"""
         audio_data = None
         if self.elevenlabs_service:
             try:
+                print(f"Generating audio for text: {question_text[:50]}...")
                 audio_data = await self.elevenlabs_service.text_to_speech(question_text)
                 print(f"Generated audio: {len(audio_data) if audio_data else 0} bytes")
+                if audio_data:
+                    print(f"Audio data type: {type(audio_data)}, first 20 bytes: {audio_data[:20] if len(audio_data) > 20 else audio_data}")
             except Exception as e:
-                print(f"Warning: Could not generate audio: {e}")
+                print(f"ERROR: Could not generate audio: {e}")
                 import traceback
                 traceback.print_exc()
+                audio_data = None
+        else:
+            print("WARNING: ElevenLabs service not available")
         
         initial_state: InterviewState = {
             "question": question,
@@ -474,13 +480,16 @@ Answer:"""
             "interview_complete": False
         }
         
-        return {
+        result = {
             "question": initial_state["question"],
             "interviewer_response": initial_state["interviewer_response"],
             "audio_data": initial_state.get("audio_data"),
             "conversation_history": initial_state["conversation_history"],
             "current_stage": initial_state["current_stage"]
         }
+        
+        print(f"Returning result with audio_data: {result.get('audio_data') is not None}, size: {len(result.get('audio_data')) if result.get('audio_data') else 0}")
+        return result
     
     async def process_user_response(
         self, 

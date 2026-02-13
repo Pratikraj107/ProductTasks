@@ -357,9 +357,15 @@ async def start_ai_interview(request: StartInterviewRequest):
         audio_base64 = None
         if result.get("audio_data"):
             import base64
-            audio_base64 = base64.b64encode(result["audio_data"]).decode('utf-8')
+            audio_bytes = result["audio_data"]
+            print(f"Audio data size: {len(audio_bytes)} bytes")
+            audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+            print(f"Audio base64 length: {len(audio_base64)} characters")
+        else:
+            print("WARNING: No audio_data in result")
+            print(f"Result keys: {result.keys()}")
         
-        return JSONResponse(content={
+        response_data = {
             "question": result["question"],
             "interviewer_response": result["interviewer_response"],
             "audio_base64": audio_base64,
@@ -372,7 +378,10 @@ async def start_ai_interview(request: StartInterviewRequest):
                 "follow_up_count": 0,
                 "interview_complete": False
             }
-        })
+        }
+        
+        print(f"Response data keys: {response_data.keys()}, has audio_base64: {audio_base64 is not None}")
+        return JSONResponse(content=response_data)
     
     except HTTPException:
         raise

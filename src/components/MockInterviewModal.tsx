@@ -162,11 +162,25 @@ export default function MockInterviewModal({ question, questionId, questionIndex
 
   const startRecording = async () => {
     try {
+      // Prevent multiple starts
+      if (recordingState === 'recording' || recordingState === 'processing') {
+        return;
+      }
+
       setError(null);
       setTranscript('');
       setEditedTranscript('');
       setFeedback(null);
       setTimer(0);
+
+      // Stop any existing recognition first
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Ignore if already stopped
+        }
+      }
 
       // Start audio recording
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -184,9 +198,22 @@ export default function MockInterviewModal({ question, questionId, questionIndex
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
 
-      // Start speech recognition
+      // Start speech recognition - check if it's not already running
       if (recognitionRef.current) {
-        recognitionRef.current.start();
+        // Wait a bit to ensure previous recognition is stopped
+        setTimeout(() => {
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.start();
+            } catch (e: any) {
+              if (e.message && e.message.includes('already started')) {
+                console.log('Recognition already started, continuing...');
+              } else {
+                throw e;
+              }
+            }
+          }
+        }, 100);
       }
 
       setRecordingState('recording');
@@ -327,12 +354,19 @@ export default function MockInterviewModal({ question, questionId, questionIndex
 
   // AI Interviewer Functions
   const startAIInterview = async () => {
+    // Prevent multiple simultaneous calls
+    if (isProcessingAnswer || aiSessionState) {
+      console.log('Interview already started or in progress');
+      return;
+    }
+
     try {
       setError(null);
       setIsProcessingAnswer(true);
       setConversationHistory([]);
       setCurrentUserAnswer('');
 
+      console.log('Starting AI interview with question:', question);
       const response = await fetch(`${API_BASE_URL}/api/interview/ai/start`, {
         method: 'POST',
         headers: {
@@ -347,6 +381,11 @@ export default function MockInterviewModal({ question, questionId, questionIndex
       }
 
       const data = await response.json();
+      console.log('Interview started, response:', {
+        has_audio: !!data.audio_base64,
+        audio_length: data.audio_base64?.length,
+        response_text: data.interviewer_response
+      });
       
       // Update session state
       setAiSessionState({
@@ -367,15 +406,16 @@ export default function MockInterviewModal({ question, questionId, questionIndex
 
       // Play audio if available
       if (data.audio_base64) {
-        console.log('Audio received, length:', data.audio_base64.length);
+        console.log('Audio received, length:', data.audio_base64.length, 'chars');
         try {
           await playAudioFromBase64(data.audio_base64);
+          console.log('Audio playback completed');
         } catch (audioErr) {
           console.error('Error playing audio:', audioErr);
           // Don't fail the whole interview if audio fails
         }
       } else {
-        console.warn('No audio_base64 in response');
+        console.warn('No audio_base64 in response. Full response:', data);
       }
 
       setIsProcessingAnswer(false);
