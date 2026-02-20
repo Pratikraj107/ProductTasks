@@ -74,8 +74,11 @@ export function AuthProvider({ children, navigate }: AuthProviderProps) {
 
   const signInWithGoogle = async () => {
     try {
+      // Use VITE_APP_URL in production so OAuth redirects to producttasks.com, not localhost
+      const appUrl = (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, '');
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: { redirectTo: `${appUrl}/dashboard` },
       });
       if (error) return { error };
       if (data?.url) window.location.href = data.url;

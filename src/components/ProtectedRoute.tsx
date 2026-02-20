@@ -8,7 +8,10 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
 
-  if (loading) {
+  // After OAuth redirect, URL may have #access_token=... while Supabase restores session
+  const hasAuthHash = typeof window !== 'undefined' && window.location.hash.includes('access_token');
+
+  if (loading || (hasAuthHash && !user)) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center">
