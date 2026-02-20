@@ -22,8 +22,22 @@ Without these, send-otp will work (MSG91) but verify-otp will return 503.
 
 ### 2. MSG91
 
-- **Already in `.env`:** `MSG91_AUTH_KEY=495473TfndDkfG699858c5P1`
-- **Optional:** If your MSG91 sender is different, set `MSG91_SENDER_ID` (max 6 characters) in `backend/.env`.
+- **Auth key:** Set `MSG91_AUTH_KEY` in `backend/.env` (or Railway).
+- **Optional:** Set `MSG91_SENDER_ID` (max 6 characters) if your MSG91 account requires it.
+
+**If the API returns 200 but no SMS is received and MSG91 Analytics shows 0 OTP sent:**
+
+- The backend can use two MSG91 APIs:
+  1. **Legacy GET API** (`sendotp.php`) – used when no flow/template is set. It may return success but **not deliver** in India (DLT) and **won’t show** in the SendOTP Analytics dashboard.
+  2. **V5 / SendOTP product API** – used when you set a flow or template ID. This is what **actually sends** the SMS and **shows in MSG91 SendOTP Analytics**.
+
+- **To get real delivery and analytics:**
+  1. In **MSG91 dashboard** go to **SendOTP → Templates** (or **Flow**) and create an OTP template if you don’t have one. For India, ensure it’s DLT-compliant (approved template + sender).
+  2. Copy the **Template ID** or **Flow ID** from the MSG91 panel.
+  3. In Railway (or `backend/.env`) set **one** of:
+     - `MSG91_FLOW_ID=<your_flow_id>`, or  
+     - `MSG91_OTP_TEMPLATE_ID=<your_template_id>`
+  4. Redeploy the backend. The app will then use the V5 API, send real SMS, and counts will appear in MSG91 Analytics.
 
 ### 3. Backend URL (frontend)
 
@@ -41,6 +55,7 @@ Without these, send-otp will work (MSG91) but verify-otp will return 503.
 - [ ] Run Supabase migration for `phone_otps`
 - [ ] Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to `backend/.env`
 - [ ] (Optional) Set `MSG91_SENDER_ID` in `backend/.env` if required by MSG91
+- [ ] (If no SMS received / analytics stay 0) Set `MSG91_FLOW_ID` or `MSG91_OTP_TEMPLATE_ID` from MSG91 SendOTP panel and redeploy
 - [ ] Start backend and frontend; use Sign In → Phone or Sign Up → Phone to test
 
 After this, mobile auth (send OTP → enter OTP → sign in) should work end-to-end.
