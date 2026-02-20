@@ -44,6 +44,14 @@ except Exception as e:
     print(f"Warning: Question answers not available: {e}")
     ANSWERS_AVAILABLE = False
 
+# Import mobile auth router (MSG91 OTP + Supabase)
+try:
+    from api.mobile_auth import router as mobile_auth_router
+    MOBILE_AUTH_AVAILABLE = True
+except Exception as e:
+    print(f"Warning: Mobile auth not available: {e}")
+    MOBILE_AUTH_AVAILABLE = False
+
 # Try to import ResumeReviewAgent, but don't fail if it's not available
 try:
     from agents.resume_reviewer import ResumeReviewAgent
@@ -190,6 +198,10 @@ if PAYMENTS_AVAILABLE:
 # Include question answers router if available
 if ANSWERS_AVAILABLE:
     app.include_router(answers_router)
+
+# Include mobile auth router if available
+if MOBILE_AUTH_AVAILABLE:
+    app.include_router(mobile_auth_router)
 
 @app.get("/")
 async def root():

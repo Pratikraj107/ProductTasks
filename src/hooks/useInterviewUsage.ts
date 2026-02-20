@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -24,6 +24,7 @@ export function useInterviewUsage() {
   const [usageStatus, setUsageStatus] = useState<UsageStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fetchingRef = useRef(false);
 
   const fetchUsageStatus = async () => {
     if (!user) {
@@ -31,20 +32,38 @@ export function useInterviewUsage() {
       return;
     }
 
+    // Prevent multiple simultaneous calls
+    if (fetchingRef.current) {
+      return;
+    }
+
+    fetchingRef.current = true;
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/usage/status/${user.id}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await fetch(`${API_BASE_URL}/api/usage/status/${user.id}`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch usage status');
       }
       const data = await response.json();
       setUsageStatus(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      console.error('Error fetching usage status:', err);
+      // Don't set error for network failures - allow graceful degradation
+      if (err instanceof Error && err.name !== 'AbortError' && err.name !== 'TimeoutError') {
+        setError(err.message);
+      }
+      console.warn('Error fetching usage status (backend may be unavailable):', err);
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   };
 
@@ -54,7 +73,15 @@ export function useInterviewUsage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/usage/check/${user.id}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+      
+      const response = await fetch(`${API_BASE_URL}/api/usage/check/${user.id}`, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {
         const errorText = await response.text();
         let errorMessage = 'Failed to check usage';
@@ -64,7 +91,7 @@ export function useInterviewUsage() {
         } catch {
           errorMessage = errorText || errorMessage;
         }
-        console.error('Usage check failed:', {
+        console.warn('Usage check failed:', {
           status: response.status,
           statusText: response.statusText,
           error: errorMessage,
@@ -75,14 +102,11 @@ export function useInterviewUsage() {
       const data = await response.json();
       return data;
     } catch (err) {
-      console.error('Error checking usage:', err);
-      // Return a more informative error structure
-      if (err instanceof Error) {
-        console.error('Error details:', {
-          message: err.message,
-          apiUrl: API_BASE_URL,
-          userId: user.id
-        });
+      // Return null for network errors to allow graceful degradation
+      if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError' || err.message.includes('Failed to fetch'))) {
+        console.warn('Usage check failed (backend may be unavailable):', err);
+      } else {
+        console.error('Error checking usage:', err);
       }
       return null;
     }

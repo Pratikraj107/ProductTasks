@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { UserPlus, Rocket, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Rocket, CheckCircle2, Smartphone } from 'lucide-react';
+import MobileAuthForm from '../components/MobileAuth/MobileAuthForm';
+
+type SignUpTab = 'email' | 'phone';
 
 interface SignUpProps {
   onNavigate?: (path: string) => void;
 }
 
 export default function SignUp({ onNavigate }: SignUpProps) {
+  const [tab, setTab] = useState<SignUpTab>('email');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -171,6 +175,34 @@ export default function SignUp({ onNavigate }: SignUpProps) {
               Start your PM learning journey today
             </p>
 
+            <div className="flex rounded-lg bg-slate-800/50 p-1 mb-5">
+              <button
+                type="button"
+                onClick={() => { setTab('email'); setError(''); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${tab === 'email' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
+              >
+                <UserPlus className="w-4 h-4" />
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => { setTab('phone'); setError(''); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${tab === 'phone' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'}`}
+              >
+                <Smartphone className="w-4 h-4" />
+                Phone
+              </button>
+            </div>
+
+            {tab === 'phone' && (
+              <MobileAuthForm
+                onSuccess={() => onNavigate?.('/dashboard')}
+                onBack={() => setTab('email')}
+              />
+            )}
+
+            {tab === 'email' && (
+              <>
             {error && (
               <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-6">
                 {error}
@@ -234,6 +266,8 @@ export default function SignUp({ onNavigate }: SignUpProps) {
                 </div>
               </button>
             </form>
+              </>
+            )}
 
             <div className="mt-6 text-center">
               <p className="text-slate-400">

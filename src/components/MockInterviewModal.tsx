@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Mic, MicOff, Pause, Play, RotateCcw, Check, Loader, MessageSquare, Volume2, Bot } from 'lucide-react';
+import { X, Mic, MicOff, Pause, Play, RotateCcw, Check, Loader, MessageSquare } from 'lucide-react';
 
 interface MockInterviewModalProps {
   question: string;
@@ -10,21 +10,6 @@ interface MockInterviewModalProps {
 }
 
 type RecordingState = 'idle' | 'recording' | 'paused' | 'processing' | 'transcribed' | 'feedback';
-type InterviewMode = 'traditional' | 'ai_interviewer';
-
-interface ConversationMessage {
-  role: 'interviewer' | 'candidate';
-  content: string;
-  timestamp: Date;
-}
-
-interface AISessionState {
-  question: string;
-  conversation_history: ConversationMessage[];
-  current_stage: string;
-  follow_up_count: number;
-  interview_complete: boolean;
-}
 
 interface FeedbackData {
   clarity: {
@@ -65,9 +50,6 @@ interface FeedbackData {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 export default function MockInterviewModal({ question, questionId, questionIndex, onClose, onInterviewComplete }: MockInterviewModalProps) {
-  // Mode selection
-  const [interviewMode, setInterviewMode] = useState<InterviewMode>('ai_interviewer'); // Default to AI interviewer
-  
   // Traditional mode state
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [transcript, setTranscript] = useState('');
@@ -77,14 +59,6 @@ export default function MockInterviewModal({ question, questionId, questionIndex
   const [error, setError] = useState<string | null>(null);
   const [generatedAnswer, setGeneratedAnswer] = useState<string | null>(null);
   const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
-
-  // AI Interviewer mode state
-  const [aiSessionState, setAiSessionState] = useState<AISessionState | null>(null);
-  const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
-  const [isAiSpeaking, setIsAiSpeaking] = useState(false);
-  const [isProcessingAnswer, setIsProcessingAnswer] = useState(false);
-  const [currentUserAnswer, setCurrentUserAnswer] = useState('');
-  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -352,395 +326,6 @@ export default function MockInterviewModal({ question, questionId, questionIndex
     audioChunksRef.current = [];
   };
 
-  // AI Interviewer Functions
-  const startAIInterview = async () => {
-    // Prevent multiple simultaneous calls
-    if (isProcessingAnswer || aiSessionState) {
-      console.log('Interview already started or in progress');
-      return;
-    }
-
-    try {
-      setError(null);
-      setIsProcessingAnswer(true);
-      setConversationHistory([]);
-      setCurrentUserAnswer('');
-
-      console.log('Starting AI interview with question:', question);
-      const response = await fetch(`${API_BASE_URL}/api/interview/ai/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ question }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Failed to start AI interview');
-      }
-
-      const data = await response.json();
-      console.log('Interview started, response:', {
-        has_audio: !!data.audio_base64,
-        audio_length: data.audio_base64?.length,
-        response_text: data.interviewer_response
-      });
-      
-      // Update session state
-      setAiSessionState({
-        question: data.question,
-        conversation_history: [],
-        current_stage: data.current_stage,
-        follow_up_count: 0,
-        interview_complete: false
-      });
-
-      // Add interviewer message to conversation
-      const interviewerMsg: ConversationMessage = {
-        role: 'interviewer',
-        content: data.interviewer_response,
-        timestamp: new Date()
-      };
-      setConversationHistory([interviewerMsg]);
-
-      // Play audio if available
-      if (data.audio_base64) {
-        console.log('Audio received, length:', data.audio_base64.length, 'chars');
-        try {
-          await playAudioFromBase64(data.audio_base64);
-          console.log('Audio playback completed');
-        } catch (audioErr) {
-          console.error('Error playing audio:', audioErr);
-          // Don't fail the whole interview if audio fails
-        }
-      } else {
-        console.warn('No audio_base64 in response. Full response:', data);
-      }
-
-      setIsProcessingAnswer(false);
-    } catch (err: any) {
-      setError(`Failed to start AI interview: ${err.message}`);
-      setIsProcessingAnswer(false);
-      console.error('Error starting AI interview:', err);
-    }
-  };
-
-  const playAudioFromBase64 = async (base64Audio: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      try {
-        setIsAiSpeaking(true);
-        console.log('Attempting to play audio, base64 length:', base64Audio.length);
-        
-        // ElevenLabs returns MP3, so try that first
-        const audioUrl = `data:audio/mpeg;base64,${base64Audio}`;
-        const audio = new Audio(audioUrl);
-        audioPlayerRef.current = audio;
-        
-        // Set volume
-        audio.volume = 1.0;
-        
-        audio.oncanplaythrough = () => {
-          console.log('Audio can play through');
-          audio.play().then(() => {
-            console.log('Audio playing successfully');
-          }).catch((err) => {
-            console.error('Error playing audio:', err);
-            setIsAiSpeaking(false);
-            reject(err);
-          });
-        };
-        
-        audio.onloadeddata = () => {
-          console.log('Audio data loaded');
-        };
-        
-        audio.onended = () => {
-          console.log('Audio playback ended');
-          setIsAiSpeaking(false);
-          resolve();
-        };
-        
-        audio.onerror = (e) => {
-          console.error('Audio error:', e, audio.error);
-          setIsAiSpeaking(false);
-          // Try alternative format
-          const audioUrl2 = `data:audio/mp3;base64,${base64Audio}`;
-          const audio2 = new Audio(audioUrl2);
-          audio2.volume = 1.0;
-          audio2.oncanplaythrough = () => {
-            audio2.play().then(() => {
-              console.log('Audio playing with alternative format');
-              audioPlayerRef.current = audio2;
-            }).catch((err) => {
-              console.error('Alternative format also failed:', err);
-              reject(new Error('Failed to play audio'));
-            });
-          };
-          audio2.onended = () => {
-            setIsAiSpeaking(false);
-            resolve();
-          };
-          audio2.onerror = () => {
-            setIsAiSpeaking(false);
-            reject(new Error('Failed to play audio in any format'));
-          };
-        };
-        
-        // Load the audio
-        audio.load();
-      } catch (err) {
-        setIsAiSpeaking(false);
-        console.error('Error setting up audio:', err);
-        reject(err);
-      }
-    });
-  };
-
-  const requestClarification = async () => {
-    if (!aiSessionState) {
-      setError('Please start the interview first');
-      return;
-    }
-
-    try {
-      setIsProcessingAnswer(true);
-      setError(null);
-
-      // Send explicit clarification request
-      const clarificationText = "Can you please clarify the question? I need more information to provide a good answer.";
-
-      // Add clarification request to conversation
-      const userMsg: ConversationMessage = {
-        role: 'candidate',
-        content: clarificationText,
-        timestamp: new Date()
-      };
-      setConversationHistory(prev => [...prev, userMsg]);
-
-      const response = await fetch(`${API_BASE_URL}/api/interview/ai/process`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          session_state: aiSessionState,
-          user_answer: clarificationText,
-          is_clarification_request: true  // Explicit flag
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Failed to get clarification');
-      }
-
-      const data = await response.json();
-
-      // Update session state
-      setAiSessionState({
-        question: data.session_state.question,
-        conversation_history: [],
-        current_stage: data.session_state.current_stage,
-        follow_up_count: data.session_state.follow_up_count,
-        interview_complete: data.session_state.interview_complete
-      });
-
-      // Add interviewer response to conversation
-      if (data.interviewer_response) {
-        const interviewerMsg: ConversationMessage = {
-          role: 'interviewer',
-          content: data.interviewer_response,
-          timestamp: new Date()
-        };
-        setConversationHistory(prev => [...prev, interviewerMsg]);
-
-        // Play audio if available
-        if (data.audio_base64) {
-          console.log('Clarification audio received');
-          try {
-            await playAudioFromBase64(data.audio_base64);
-          } catch (audioErr) {
-            console.error('Error playing clarification audio:', audioErr);
-          }
-        }
-      }
-
-      setIsProcessingAnswer(false);
-    } catch (err: any) {
-      setError(`Failed to get clarification: ${err.message}`);
-      setIsProcessingAnswer(false);
-      console.error('Error requesting clarification:', err);
-    }
-  };
-
-  const processUserAnswer = async (userAnswer: string) => {
-    if (!aiSessionState || !userAnswer.trim()) {
-      return;
-    }
-
-    try {
-      setIsProcessingAnswer(true);
-      setError(null);
-
-      // Add user answer to conversation
-      const userMsg: ConversationMessage = {
-        role: 'candidate',
-        content: userAnswer,
-        timestamp: new Date()
-      };
-      setConversationHistory(prev => [...prev, userMsg]);
-
-      const response = await fetch(`${API_BASE_URL}/api/interview/ai/process`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          session_state: aiSessionState,
-          user_answer: userAnswer,
-          is_clarification_request: false
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Failed to process answer');
-      }
-
-      const data = await response.json();
-
-      // Update session state
-      setAiSessionState({
-        question: data.session_state.question,
-        conversation_history: [],
-        current_stage: data.session_state.current_stage,
-        follow_up_count: data.session_state.follow_up_count,
-        interview_complete: data.session_state.interview_complete
-      });
-
-      // Add interviewer response to conversation
-      if (data.interviewer_response) {
-        const interviewerMsg: ConversationMessage = {
-          role: 'interviewer',
-          content: data.interviewer_response,
-          timestamp: new Date()
-        };
-        setConversationHistory(prev => [...prev, interviewerMsg]);
-
-        // Play audio if available
-        if (data.audio_base64) {
-          await playAudioFromBase64(data.audio_base64);
-        }
-      }
-
-      // Clear current answer
-      setCurrentUserAnswer('');
-
-      // If interview is complete, get feedback
-      if (data.interview_complete) {
-        await getFinalFeedback();
-      }
-
-      setIsProcessingAnswer(false);
-    } catch (err: any) {
-      setError(`Failed to process answer: ${err.message}`);
-      setIsProcessingAnswer(false);
-      console.error('Error processing answer:', err);
-    }
-  };
-
-  const getFinalFeedback = async () => {
-    // Collect all user answers from conversation
-    const userAnswers = conversationHistory
-      .filter(msg => msg.role === 'candidate')
-      .map(msg => msg.content)
-      .join(' ');
-
-    if (!userAnswers.trim()) {
-      setError('No answer provided for feedback');
-      return;
-    }
-
-    setIsProcessingAnswer(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/interview/feedback`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question: question,
-          answer: userAnswers,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to get feedback');
-      }
-
-      const feedbackData = await response.json();
-      setFeedback(feedbackData);
-      
-      // Switch to feedback view (we'll handle this in the UI)
-      if (onInterviewComplete) {
-        onInterviewComplete();
-      }
-    } catch (err: any) {
-      setError(`Failed to get feedback: ${err.message}`);
-      console.error('Error getting feedback:', err);
-    } finally {
-      setIsProcessingAnswer(false);
-    }
-  };
-
-  const handleAIStopRecording = async () => {
-    // Stop recording and process answer
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-    
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-
-    stopTimer();
-
-    // Wait for transcription
-    setRecordingState('processing');
-    
-    try {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
-      
-      const transcribeResponse = await fetch(`${API_BASE_URL}/api/interview/transcribe`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (transcribeResponse.ok) {
-        const transcribeData = await transcribeResponse.json();
-        const finalTranscript = transcribeData.transcript || transcript;
-        
-        // Process the answer
-        await processUserAnswer(finalTranscript);
-      } else {
-        // Use real-time transcript
-        await processUserAnswer(transcript);
-      }
-      
-      setRecordingState('idle');
-      setTranscript('');
-      audioChunksRef.current = [];
-    } catch (err: any) {
-      setError(`Failed to process recording: ${err.message}`);
-      setRecordingState('idle');
-    }
-  };
-
   const generateAnswer = async () => {
     if (!questionId || questionIndex === undefined) {
       setError('Question ID and index are required to generate answer');
@@ -796,208 +381,19 @@ export default function MockInterviewModal({ question, questionId, questionIndex
                 <p className="text-xs text-slate-400 mt-0.5">Practice your answer and get AI feedback</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              {/* Mode Toggle */}
-              <div className="flex items-center space-x-2 bg-slate-800/50 rounded-lg p-1 border border-slate-700">
-                <button
-                  onClick={() => setInterviewMode('ai_interviewer')}
-                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all flex items-center space-x-2 ${
-                    interviewMode === 'ai_interviewer'
-                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Bot className="w-4 h-4" />
-                  <span>AI Interviewer</span>
-                </button>
-                <button
-                  onClick={() => setInterviewMode('traditional')}
-                  className={`px-4 py-2 rounded-md text-sm font-semibold transition-all ${
-                    interviewMode === 'traditional'
-                      ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Traditional
-                </button>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-slate-800/50 rounded-lg transition-all hover:scale-110"
-              >
-                <X className="w-5 h-5 text-slate-400 hover:text-white" />
-              </button>
-            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-800/50 rounded-lg transition-all hover:scale-110"
+            >
+              <X className="w-5 h-5 text-slate-400 hover:text-white" />
+            </button>
           </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-8">
-          {/* AI Interviewer Mode */}
-          {interviewMode === 'ai_interviewer' && (
-            <>
-              {/* Conversation History */}
-              <div className="mb-6 space-y-4 max-h-[400px] overflow-y-auto">
-                {conversationHistory.length === 0 && !isProcessingAnswer && (
-                  <div className="text-center py-12">
-                    <Bot className="w-16 h-16 mx-auto mb-4 text-cyan-400 opacity-50" />
-                    <p className="text-slate-400 text-lg">Ready to start your AI interview</p>
-                    <button
-                      onClick={startAIInterview}
-                      className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold rounded-lg transition-all"
-                    >
-                      Start Interview
-                    </button>
-                  </div>
-                )}
-
-                {conversationHistory.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex ${msg.role === 'interviewer' ? 'justify-start' : 'justify-end'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-2xl p-4 ${
-                        msg.role === 'interviewer'
-                          ? 'bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30'
-                          : 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border border-slate-600/50'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2 mb-2">
-                        {msg.role === 'interviewer' ? (
-                          <Bot className="w-4 h-4 text-cyan-400" />
-                        ) : (
-                          <Mic className="w-4 h-4 text-slate-400" />
-                        )}
-                        <span className="text-xs font-semibold text-slate-300">
-                          {msg.role === 'interviewer' ? 'AI Interviewer' : 'You'}
-                        </span>
-                      </div>
-                      <p className="text-white leading-relaxed">{msg.content}</p>
-                    </div>
-                  </div>
-                ))}
-
-                {isProcessingAnswer && (
-                  <div className="flex justify-start">
-                    <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50">
-                      <Loader className="w-5 h-5 animate-spin text-cyan-400" />
-                    </div>
-                  </div>
-                )}
-
-                {isAiSpeaking && (
-                  <div className="flex justify-start">
-                    <div className="bg-blue-500/20 rounded-2xl p-4 border border-blue-500/30 flex items-center space-x-2">
-                      <Volume2 className="w-5 h-5 text-cyan-400 animate-pulse" />
-                      <span className="text-slate-300 text-sm">AI is speaking...</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Recording Controls for AI Mode */}
-              {aiSessionState && !aiSessionState.interview_complete && (
-                <div className="space-y-4">
-                  {recordingState === 'idle' && !isProcessingAnswer && !isAiSpeaking && (
-                    <div className="flex flex-col items-center space-y-4">
-                      <button
-                        onClick={startRecording}
-                        className="group relative"
-                      >
-                        <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-red-700 rounded-full blur-lg opacity-70 group-hover:opacity-100 transition-opacity animate-pulse"></div>
-                        <div className="relative flex items-center justify-center space-x-3 px-8 py-4 rounded-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-lg transition-all shadow-xl">
-                          <div className="w-3 h-3 bg-white rounded-full"></div>
-                          <Mic className="w-6 h-6" />
-                          <span>Record Your Answer</span>
-                        </div>
-                      </button>
-                      
-                      <button
-                        onClick={requestClarification}
-                        disabled={isProcessingAnswer}
-                        className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-slate-600 disabled:to-slate-600 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                      >
-                        <MessageSquare className="w-5 h-5" />
-                        <span>Ask for Clarification</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {(recordingState === 'recording' || recordingState === 'paused') && (
-                    <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          {recordingState === 'recording' && (
-                            <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                              <span className="text-red-400 font-semibold">Recording...</span>
-                            </div>
-                          )}
-                          {recordingState === 'paused' && (
-                            <span className="text-yellow-400 font-semibold">Paused</span>
-                          )}
-                        </div>
-                        <div className="text-2xl font-mono text-cyan-400">{formatTime(timer)}</div>
-                      </div>
-                      
-                      <div className="mb-4 bg-slate-900/50 rounded-lg p-4 min-h-[100px]">
-                        <p className="text-slate-200 whitespace-pre-wrap">{transcript || 'Your speech will appear here...'}</p>
-                      </div>
-
-                      <div className="flex items-center justify-center space-x-3">
-                        {recordingState === 'recording' && (
-                          <button
-                            onClick={pauseRecording}
-                            className="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-semibold transition-all"
-                          >
-                            <Pause className="w-5 h-5 inline mr-2" />
-                            Pause
-                          </button>
-                        )}
-                        {recordingState === 'paused' && (
-                          <>
-                            <button
-                              onClick={resumeRecording}
-                              className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-all"
-                            >
-                              <Play className="w-5 h-5 inline mr-2" />
-                              Resume
-                            </button>
-                            <button
-                              onClick={handleAIStopRecording}
-                              className="px-6 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-semibold transition-all"
-                            >
-                              <MicOff className="w-5 h-5 inline mr-2" />
-                              Stop & Submit
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {recordingState === 'processing' && (
-                    <div className="text-center py-8">
-                      <Loader className="w-8 h-8 animate-spin text-cyan-400 mx-auto mb-4" />
-                      <p className="text-slate-400">Processing your answer...</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Error Message */}
-              {error && (
-                <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                  <p className="text-red-400 text-sm">{error}</p>
-                </div>
-              )}
-            </>
-          )}
-
           {/* Traditional Mode */}
-          {interviewMode === 'traditional' && (
-            <>
+          <>
               {/* Question Card - Enhanced */}
               <div className="mb-8">
                 <div className="relative group">
@@ -1202,19 +598,17 @@ export default function MockInterviewModal({ question, questionId, questionIndex
               </div>
             </div>
           )}
-            </>
-          )}
+          </>
 
           {/* Error Message (Traditional Mode) */}
-          {interviewMode === 'traditional' && error && (
+          {error && (
             <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
 
           {/* Feedback Section (Shared for both modes) */}
-          {((interviewMode === 'traditional' && recordingState === 'feedback') || 
-            (interviewMode === 'ai_interviewer' && feedback)) && feedback && (
+          {recordingState === 'feedback' && feedback && (
             <div className="space-y-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-2xl font-bold text-white">AI Feedback</h3>

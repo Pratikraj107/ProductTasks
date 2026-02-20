@@ -47,6 +47,7 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
     questionId: 0,
     questionIndex: 0
   });
+  const [isOpeningInterview, setIsOpeningInterview] = useState(false);
 
   const categoryGradients = {
     'Product Design': 'from-blue-500 to-cyan-500',
@@ -161,35 +162,50 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
       return;
     }
 
-    // Clear any previous errors
+    // Prevent multiple simultaneous calls
+    if (isOpeningInterview) {
+      return;
+    }
+
+    setIsOpeningInterview(true);
     setUsageError(null);
 
-    // Check usage before opening
+    // Open modal immediately
+    setMockInterviewState({
+      isOpen: true,
+      question,
+      questionId,
+      questionIndex
+    });
+
+    // Check usage in the background (non-blocking)
     try {
-      const usageCheck = await checkUsage();
-      if (!usageCheck) {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-        setUsageError(`Unable to check usage limits. Please check if the backend is running at ${API_BASE_URL}`);
-        console.error('Usage check returned null. Check browser console for details.');
-        return;
-      }
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Usage check timeout')), 3000)
+      );
+      
+      const usageCheck = await Promise.race([
+        checkUsage(),
+        timeoutPromise
+      ]) as Awaited<ReturnType<typeof checkUsage>>;
 
-      if (!usageCheck.can_proceed) {
-        // Show upgrade modal instead of error message
+      if (usageCheck && !usageCheck.can_proceed) {
+        // Close modal and show upgrade modal if usage limit reached
+        setMockInterviewState({
+          isOpen: false,
+          question: '',
+          questionId: 0,
+          questionIndex: 0
+        });
         setShowUpgradeModal(true);
-        return;
       }
-
-      setUsageError(null);
-      setMockInterviewState({
-        isOpen: true,
-        question,
-        questionId,
-        questionIndex
-      });
     } catch (err) {
-      console.error('Error in openMockInterview:', err);
-      setUsageError('An error occurred while checking usage limits. Please try again.');
+      // Silently fail - allow user to proceed even if backend is unavailable
+      console.warn('Usage check failed (backend may be unavailable):', err);
+      // Modal is already open, so user can proceed
+    } finally {
+      setIsOpeningInterview(false);
     }
   };
 
