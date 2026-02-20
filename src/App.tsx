@@ -12,6 +12,17 @@ import AdminLayout from './components/AdminLayout';
 function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
+  // When Supabase OAuth redirects to site root with tokens (e.g. producttasks.com/#access_token=...),
+  // send user to /dashboard so they land in the right place
+  useEffect(() => {
+    const path = window.location.pathname || '/';
+    const hash = window.location.hash || '';
+    if ((path === '/' || path === '') && hash.includes('access_token')) {
+      window.location.replace(`/dashboard${hash}`);
+      return;
+    }
+  }, []);
+
   useEffect(() => {
     // Handle browser back/forward buttons
     const handlePopState = () => {
