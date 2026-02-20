@@ -102,13 +102,15 @@ def _send_otp_v5_flow(
         "authkey": auth_key,
         "Content-Type": "application/json",
     }
-    # MSG91 v5: use flow_id (SendOTP product) or template_id per their docs
+    # MSG91 v5: use flow_id (SendOTP product) or template_id per their docs.
+    # Template must contain ##OTP## in message body. Send both "otp" and "OTP" for compatibility.
     body = {
         "short_url": "0",
         "recipients": [
             {
                 "mobiles": phone_clean,
                 "otp": otp,
+                "OTP": otp,
             }
         ],
     }

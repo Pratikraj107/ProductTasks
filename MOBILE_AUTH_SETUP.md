@@ -39,6 +39,11 @@ Without these, send-otp will work (MSG91) but verify-otp will return 503.
      - `MSG91_OTP_TEMPLATE_ID=<your_template_id>`
   4. Redeploy the backend. The app will then use the V5 API, send real SMS, and counts will appear in MSG91 Analytics.
 
+- **If you get "Message doesn't contain otp":** The template’s **message content** (the main body text) must include the OTP placeholder. In MSG91 → SendOTP → your template → Update Template:
+  1. In **OTP Content** / the main message body (the large text area), enter text that contains the placeholder, e.g. **`Your Verification code is ##OTP##`** (use exactly **##OTP##** in uppercase).
+  2. Do not leave the message body empty. The "Message Variables" section defines the variable; the **content** must actually contain `##OTP##` where the OTP should appear.
+  3. Click **Update** and try sending OTP again.
+
 ### 3. Backend URL (frontend)
 
 - Frontend calls `VITE_API_BASE_URL` for auth. Default is `http://localhost:8000`.
