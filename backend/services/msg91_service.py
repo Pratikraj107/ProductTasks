@@ -99,12 +99,12 @@ def _send_otp_v5_flow(
 
     url = "https://api.msg91.com/api/v5/otp"
     headers = {"Content-Type": "application/json", "authkey": auth_key}
-    # MSG91 v5: authkey in body too (some MSG91 POST APIs require it in body). Use flow_id or template_id.
+    # MSG91 v5: some implementations expect top-level "mobiles" (comma-separated); also send recipients array.
     # Template must contain ##OTP## in message body. Send both "otp" and "OTP" for compatibility.
-    # Send both "mobiles" and "mobile" so either format is accepted (avoids "enter atleast one number" error).
     body = {
         "authkey": auth_key,
         "short_url": "0",
+        "mobiles": phone_clean,
         "recipients": [
             {
                 "mobiles": phone_clean,
@@ -118,8 +118,8 @@ def _send_otp_v5_flow(
         body["flow_id"] = flow_or_template_id
     else:
         body["template_id"] = flow_or_template_id
-    if sender_id and (s := (sender_id or "").strip()):
-        body["sender"] = s[:6] if len(s) > 6 else s
+    s = (sender_id or "").strip() or "smsind"
+    body["sender"] = s[:6] if len(s) > 6 else s
 
     try:
         with httpx.Client(timeout=10) as client:
