@@ -5,6 +5,7 @@ import os
 import hashlib
 import secrets
 import re
+import logging
 from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -16,6 +17,8 @@ for var in _proxy_vars:
         os.environ.pop(var, None)
 
 from supabase import create_client
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -61,33 +64,70 @@ class VerifyOtpRequest(BaseModel):
     otp: str
 
 
+def _get_single_row(result):
+    """Get single row from Supabase result; .data can be dict or list depending on client version."""
+    if not result or not getattr(result, "data", None):
+        return None
+    data = result.data
+    if isinstance(data, dict):
+        return data
+    if isinstance(data, list) and len(data) > 0:
+        return data[0]
+    return None
+
+
 @router.post("/send-otp")
 async def send_otp(req: SendOtpRequest):
     """Generate OTP, store hash in DB, send via MSG91. Enforce resend cooldown."""
-    from services.msg91_service import send_otp as msg91_send
+    try:
+        from services.msg91_service import send_otp as msg91_send
+    except ModuleNotFoundError:
+        try:
+            from backend.services.msg91_service import send_otp as msg91_send
+        except Exception as e:
+            logger.exception("Failed to import msg91_service: %s", e)
+            raise HTTPException(status_code=503, detail="OTP service unavailable")
+    except Exception as e:
+        logger.exception("Failed to import msg91_service: %s", e)
+        raise HTTPException(status_code=503, detail="OTP service unavailable")
 
     phone = normalize_phone(req.phone)
     if len(phone) < 10:
         raise HTTPException(status_code=400, detail="Invalid phone number")
 
-    supabase = get_supabase()
+    try:
+        supabase = get_supabase()
+    except HTTPException:
+        raise
+
     sender_id = os.getenv("MSG91_SENDER_ID")
 
     # Cooldown: do not send if last created_at is within RESEND_COOLDOWN_SECONDS
-    existing = (
-        supabase.table("phone_otps")
-        .select("created_at")
-        .eq("phone", phone)
-        .maybe_single()
-        .execute()
-    )
-    if existing.data and existing.data.get("created_at"):
-        created = datetime.fromisoformat(existing.data["created_at"].replace("Z", "+00:00"))
-        if (datetime.now(created.tzinfo) - created).total_seconds() < RESEND_COOLDOWN_SECONDS:
-            raise HTTPException(
-                status_code=429,
-                detail=f"Please wait {RESEND_COOLDOWN_SECONDS} seconds before resending OTP",
-            )
+    try:
+        existing = (
+            supabase.table("phone_otps")
+            .select("created_at")
+            .eq("phone", phone)
+            .maybe_single()
+            .execute()
+        )
+        row_data = _get_single_row(existing)
+        if row_data and row_data.get("created_at"):
+            created_str = row_data["created_at"].replace("Z", "+00:00")
+            created = datetime.fromisoformat(created_str)
+            now = datetime.utcnow()
+            if created.tzinfo:
+                now = datetime.now(created.tzinfo)
+            if (now - created).total_seconds() < RESEND_COOLDOWN_SECONDS:
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Please wait {RESEND_COOLDOWN_SECONDS} seconds before resending OTP",
+                )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error checking OTP cooldown: %s", e)
+        raise HTTPException(status_code=500, detail="Error checking rate limit")
 
     otp = "".join(secrets.choice("0123456789") for _ in range(OTP_LENGTH))
     expires_at = (datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat() + "Z"
@@ -99,7 +139,11 @@ async def send_otp(req: SendOtpRequest):
         "expires_at": expires_at,
         "created_at": datetime.utcnow().isoformat() + "Z",
     }
-    supabase.table("phone_otps").upsert(row, on_conflict="phone").execute()
+    try:
+        supabase.table("phone_otps").upsert(row, on_conflict="phone").execute()
+    except Exception as e:
+        logger.exception("Error storing OTP: %s", e)
+        raise HTTPException(status_code=500, detail="Error storing OTP. Check database and env (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY).")
 
     ok, msg = msg91_send(phone, otp, sender_id)
     if not ok:
