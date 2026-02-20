@@ -90,40 +90,35 @@ def _send_otp_legacy(
 def _send_otp_v5_flow(
     phone_clean: str, otp: str, auth_key: str, flow_or_template_id: str, sender_id: str | None
 ) -> tuple[bool, str]:
-    """V5/flow API - used by SendOTP product; shows in MSG91 analytics and works with DLT."""
+    """V5 OTP API - per docs.msg91.com/otp/sendotp and msg91-v5: GET with mobile in query, optional JSON body for vars."""
     try:
         import httpx
     except ImportError:
         logger.warning("httpx not available, falling back to legacy API")
         return _send_otp_legacy(phone_clean, otp, auth_key, sender_id)
 
-    url = "https://api.msg91.com/api/v5/otp"
-    headers = {"Content-Type": "application/json", "authkey": auth_key}
-    # MSG91 v5: some implementations expect top-level "mobiles" (comma-separated); also send recipients array.
-    # Template must contain ##OTP## in message body. Send both "otp" and "OTP" for compatibility.
-    body = {
+    # MSG91 v5 SendOTP: mobile must be in query string (GET). Template vars (e.g. OTP) can be in body.
+    # See https://docs.msg91.com/otp/sendotp and https://github.com/alokpaidalwar/msg91-v5
+    params = {
         "authkey": auth_key,
-        "short_url": "0",
-        "mobiles": phone_clean,
-        "recipients": [
-            {
-                "mobiles": phone_clean,
-                "mobile": phone_clean,
-                "otp": otp,
-                "OTP": otp,
-            }
-        ],
+        "mobile": phone_clean,
+        "otp": otp,
+        "otp_expiry": os.getenv("OTP_EXPIRY_MINUTES", "5"),
+        "otp_length": str(len(otp)),
     }
     if os.getenv("MSG91_FLOW_ID"):
-        body["flow_id"] = flow_or_template_id
+        params["flow_id"] = flow_or_template_id
     else:
-        body["template_id"] = flow_or_template_id
+        params["template_id"] = flow_or_template_id
     s = (sender_id or "").strip() or "smsind"
-    body["sender"] = s[:6] if len(s) > 6 else s
+    params["sender"] = s[:6] if len(s) > 6 else s
+
+    url = "https://api.msg91.com/api/v5/otp?" + urllib.parse.urlencode(params)
+    headers = {"Content-Type": "application/json"}
 
     try:
         with httpx.Client(timeout=10) as client:
-            r = client.post(url, json=body, headers=headers)
+            r = client.get(url, headers=headers)
         resp = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
         if r.status_code == 200 and resp.get("type") == "success":
             return True, resp.get("message", "OTP sent")
