@@ -10,6 +10,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   setSessionFromTokens: (accessToken: string, refreshToken: string) => Promise<{ error: any }>;
   sendOtp: (phone: string) => Promise<{ error: string | null }>;
@@ -68,6 +69,19 @@ export function AuthProvider({ children, navigate }: AuthProviderProps) {
       return { error };
     } catch (error) {
       return { error };
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+      });
+      if (error) return { error };
+      if (data?.url) window.location.href = data.url;
+      return { error: null };
+    } catch (error) {
+      return { error: error as any };
     }
   };
 
@@ -164,7 +178,7 @@ export function AuthProvider({ children, navigate }: AuthProviderProps) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, setSessionFromTokens, sendOtp, verifyOtp, navigate }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, signOut, setSessionFromTokens, sendOtp, verifyOtp, navigate }}>
       {children}
     </AuthContext.Provider>
   );
