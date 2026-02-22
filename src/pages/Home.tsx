@@ -233,6 +233,15 @@ export default function Home({ onNavigate }: HomeProps) {
                 Pricing
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 group-hover:w-full transition-all duration-300"></span>
               </a>
+              {!user && (
+                <button
+                  onClick={() => onNavigate?.('/signin')}
+                  className="text-slate-300 hover:text-cyan-400 transition-colors font-medium relative group"
+                >
+                  Login
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 group-hover:w-full transition-all duration-300"></span>
+                </button>
+              )}
               {user ? (
                 <div className="flex items-center space-x-4">
                   <span className="text-slate-400 text-sm">{user.email}</span>
@@ -251,7 +260,7 @@ export default function Home({ onNavigate }: HomeProps) {
                 >
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-200"></div>
                   <div className="relative bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-6 py-2 rounded-full font-semibold">
-                    Get Started
+                    Sign up
                   </div>
                 </button>
               )}
@@ -271,6 +280,14 @@ export default function Home({ onNavigate }: HomeProps) {
             <div className="px-4 py-4 space-y-3">
               <a href="#features" className="block text-slate-300 hover:text-cyan-400 transition-colors font-medium">Features</a>
               <a href="#pricing" className="block text-slate-300 hover:text-cyan-400 transition-colors font-medium">Pricing</a>
+              {!user && (
+                <button
+                  onClick={() => { setMobileMenuOpen(false); onNavigate?.('/signin'); }}
+                  className="block w-full text-left text-slate-300 hover:text-cyan-400 transition-colors font-medium"
+                >
+                  Login
+                </button>
+              )}
               {user ? (
                 <>
                   <div className="text-slate-400 text-sm pt-2 border-t border-slate-800">{user.email}</div>
@@ -327,7 +344,7 @@ export default function Home({ onNavigate }: HomeProps) {
                 <div className="relative bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-10 py-5 rounded-full font-bold text-lg flex items-center space-x-3 overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   <Mic className="w-5 h-5 relative z-10" />
-                  <span className="relative z-10">Start Free Trial</span>
+                  <span className="relative z-10">Get started for free</span>
                   <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-2 transition-transform duration-300" />
                 </div>
               </button>
