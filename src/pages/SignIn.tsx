@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogIn, Rocket, Smartphone } from 'lucide-react';
-import MobileAuthForm from '../components/MobileAuth/MobileAuthForm';
+import { LogIn, Rocket /* , Smartphone */ } from 'lucide-react';
+// import MobileAuthForm from '../components/MobileAuth/MobileAuthForm'; // uncomment when re-enabling phone login
 
 type SignInTab = 'email' | 'phone';
 
@@ -127,11 +127,11 @@ export default function SignIn({ onNavigate }: SignInProps) {
                 <div className="w-full border-t border-slate-700"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-3 bg-slate-900/80 text-slate-400">or sign in with email / phone</span>
+                <span className="px-3 bg-slate-900/80 text-slate-400">or sign in with email</span>
               </div>
             </div>
 
-            {/* Email / Phone tabs */}
+            {/* Email / Phone tabs - phone option commented out for now, will add back later */}
             <div className="flex rounded-lg bg-slate-800/50 p-1 mb-5">
               <button
                 type="button"
@@ -141,6 +141,7 @@ export default function SignIn({ onNavigate }: SignInProps) {
                 <LogIn className="w-4 h-4" />
                 Email
               </button>
+              {/* Phone tab - uncomment to re-enable phone login
               <button
                 type="button"
                 onClick={() => { setTab('phone'); setError(''); }}
@@ -149,14 +150,17 @@ export default function SignIn({ onNavigate }: SignInProps) {
                 <Smartphone className="w-4 h-4" />
                 Phone
               </button>
+              */}
             </div>
 
+            {/* Phone login - uncomment to re-enable
             {tab === 'phone' && (
               <MobileAuthForm
                 onSuccess={() => onNavigate?.('/dashboard')}
                 onBack={() => setTab('email')}
               />
             )}
+            */}
 
             {tab === 'email' && (
               <>
