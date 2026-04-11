@@ -193,6 +193,30 @@ export default function Home({ onNavigate }: HomeProps) {
     { value: "1000+", label: "Successful Candidates" }
   ];
 
+  const testimonials = [
+    {
+      quote: "ProductTasks helped me structure my answers, sharpen my frameworks, and feel confident in every PM interview.",
+      name: "Aarav Sharma",
+      role: "Product Manager, Bengaluru",
+      result: "Received 3 interview invites in 10 days"
+    }
+  ];
+
+  const faqItems = [
+    {
+      question: "How quickly can I start practicing?",
+      answer: "Sign up instantly and begin using the free plan right away. No credit card is required for the free experience."
+    },
+    {
+      question: "Does the AI feedback actually help with live PM interviews?",
+      answer: "Yes. Our feedback focuses on structure, product sense, metrics, trade-offs, and storytelling so you can improve before your live interview."
+    },
+    {
+      question: "What is the difference between the free and paid plans?",
+      answer: "The free plan gives you sample questions and basic guidance. Paid plans unlock unlimited AI mock interviews, full feedback, and advanced framework coaching."
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden relative">
       <div className="fixed inset-0 z-0">
@@ -231,6 +255,10 @@ export default function Home({ onNavigate }: HomeProps) {
               </a>
               <a href="#pricing" className="text-slate-300 hover:text-cyan-400 transition-colors font-medium relative group">
                 Pricing
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 group-hover:w-full transition-all duration-300"></span>
+              </a>
+              <a href="#faq" className="text-slate-300 hover:text-cyan-400 transition-colors font-medium relative group">
+                FAQs
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 group-hover:w-full transition-all duration-300"></span>
               </a>
               {!user && (
@@ -280,6 +308,7 @@ export default function Home({ onNavigate }: HomeProps) {
             <div className="px-4 py-4 space-y-3">
               <a href="#features" className="block text-slate-300 hover:text-cyan-400 transition-colors font-medium">Features</a>
               <a href="#pricing" className="block text-slate-300 hover:text-cyan-400 transition-colors font-medium">Pricing</a>
+              <a href="#faq" className="block text-slate-300 hover:text-cyan-400 transition-colors font-medium">FAQs</a>
               {!user && (
                 <button
                   onClick={() => { setMobileMenuOpen(false); onNavigate?.('/signin'); }}
@@ -316,32 +345,47 @@ export default function Home({ onNavigate }: HomeProps) {
       <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 z-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-5xl mx-auto">
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 backdrop-blur-sm rounded-full px-5 py-2 mb-8 relative group">
+            <div className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 backdrop-blur-sm rounded-full px-5 py-2 mb-8 relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-cyan-500/20 to-blue-500/0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
-              <span className="text-sm font-medium text-cyan-300 relative z-10">Ace Your Product Management Interviews</span>
+              <span className="text-sm font-medium text-cyan-300 relative z-10">Interview coaching for aspiring PMs</span>
             </div>
 
             <h1 className="text-6xl sm:text-6xl lg:text-6xl font-black mb-8 leading-[1.1] tracking-tight">
-              <span className="block mb-2">Master PM Interviews</span>
-              <span className="block mb-2">with AI-Powered</span>
+              <span className="block mb-2">Turn product interviews</span>
+              <span className="block mb-2">into offers</span>
               <span className="relative inline-block">
                 <span className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-500 blur-2xl opacity-50"></span>
-                <span className="relative bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-400 bg-clip-text text-transparent animate-pulse">Mock Interviews</span>
+                <span className="relative bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-400 bg-clip-text text-transparent animate-pulse">with AI-powered practice</span>
               </span>
             </h1>
 
-            <p className="text-xl sm:text-2xl text-slate-400 mb-12 leading-relaxed max-w-3xl mx-auto font-light">
-              Practice with 600+ real PM interview questions. Get instant AI feedback on your answers, master PM frameworks, and land your dream product management role.
+            <p className="text-xl sm:text-2xl text-slate-400 mb-10 leading-relaxed max-w-3xl mx-auto font-light">
+              Practice 1:1 PM interview scenarios with voice and text, get instant feedback on frameworks, product sense, metrics, and storytelling, and climb your confidence before every call.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <div className="grid gap-4 sm:grid-cols-3 max-w-4xl mx-auto mb-12">
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-5 text-left">
+                <p className="text-slate-300 text-sm uppercase tracking-[0.2em] mb-3">Built for PMs</p>
+                <p className="text-lg font-semibold text-white">600+ real PM questions from top companies</p>
+              </div>
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-5 text-left">
+                <p className="text-slate-300 text-sm uppercase tracking-[0.2em] mb-3">AI guidance</p>
+                <p className="text-lg font-semibold text-white">Feedback on structure, metrics, and trade-off thinking</p>
+              </div>
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-5 text-left">
+                <p className="text-slate-300 text-sm uppercase tracking-[0.2em] mb-3">Progress</p>
+                <p className="text-lg font-semibold text-white">Practice faster and see results with every session</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12">
               <button 
                 onClick={() => onNavigate?.('/signup')}
-                className="group relative"
+                className="group relative w-full sm:w-auto"
               >
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-500 rounded-full blur-lg opacity-70 group-hover:opacity-100 transition duration-500 group-hover:animate-pulse"></div>
-                <div className="relative bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-10 py-5 rounded-full font-bold text-lg flex items-center space-x-3 overflow-hidden">
+                <div className="relative bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-10 py-5 rounded-full font-bold text-lg flex items-center justify-center space-x-3 overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                   <Mic className="w-5 h-5 relative z-10" />
                   <span className="relative z-10">Get started for free</span>
@@ -350,10 +394,10 @@ export default function Home({ onNavigate }: HomeProps) {
               </button>
               <a 
                 href="#features"
-                className="group relative bg-slate-900/50 border-2 border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white px-10 py-5 rounded-full font-bold text-lg transition-all duration-300 backdrop-blur-sm flex items-center space-x-2"
+                className="group relative w-full sm:w-auto bg-slate-900/50 border-2 border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white px-10 py-5 rounded-full font-bold text-lg transition-all duration-300 backdrop-blur-sm flex items-center justify-center space-x-2"
               >
                 <Zap className="w-5 h-5" />
-                <span>See How It Works</span>
+                <span>See how it works</span>
               </a>
             </div>
 
@@ -361,7 +405,7 @@ export default function Home({ onNavigate }: HomeProps) {
               {stats.map((stat, index) => (
                 <div key={index} className="group relative">
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="relative bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-6 group-hover:border-cyan-500/50 transition-all duration-300">
+                  <div className="relative bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-6 group-hover:border-cyan-500/50 transition-all duration-300 h-full">
                     <div className="text-5xl font-black bg-gradient-to-br from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">
                       {stat.value}
                     </div>
@@ -369,6 +413,55 @@ export default function Home({ onNavigate }: HomeProps) {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonial Section */}
+      <section className="relative py-24 px-4 sm:px-6 lg:px-8 z-10">
+        <div className="max-w-7xl mx-auto grid gap-8 lg:grid-cols-[1.2fr_0.8fr] items-center">
+          <div className="space-y-8">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 backdrop-blur-sm rounded-full px-5 py-2">
+              <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
+              <span className="text-sm font-medium text-cyan-300">Trusted by aspiring PMs</span>
+            </div>
+            <h2 className="text-5xl sm:text-6xl font-black leading-tight">
+              Real practice that turns into real interview offers.
+            </h2>
+            <p className="text-xl text-slate-400 max-w-2xl leading-relaxed font-light">
+              Get the same structured feedback that helps candidates clarify their product thinking, sharpen their stories, and perform confidently in every stage of the PM interview process.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-3xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white mb-4">
+                  <Award className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Practice with real PM questions</h3>
+                <p className="text-slate-400 text-sm">Prepared from actual product management interview tracks and framework-driven scenarios.</p>
+              </div>
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-3xl bg-gradient-to-r from-green-500 to-teal-500 text-white mb-4">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Feedback on every answer</h3>
+                <p className="text-slate-400 text-sm">AI review on frameworks, metrics, clarity, risk assessment, and storytelling so you improve fast.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl shadow-black/20">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-3xl blur opacity-20"></div>
+            <div className="relative space-y-6">
+              <p className="text-slate-300 italic text-lg leading-relaxed">“ProductTasks helped me structure my answers clearly, apply the right frameworks, and stop second-guessing myself. I landed offers from two top startups within three weeks.”</p>
+              <div>
+                <p className="font-bold text-white">Aarav Sharma</p>
+                <p className="text-slate-500 text-sm">Product Manager, Bengaluru</p>
+              </div>
+              <div className="rounded-3xl bg-slate-950/90 border border-slate-800 p-4 text-sm text-slate-400">
+                <p className="font-semibold text-white">Candidate win</p>
+                <p>Received 3 interview invites in 10 days after focused mock interview practice.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -403,6 +496,25 @@ export default function Home({ onNavigate }: HomeProps) {
                   <p className="relative text-slate-400 leading-relaxed">{feature.description}</p>
                   <div className="absolute bottom-0 left-0 w-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 group-hover:w-full transition-all duration-500"></div>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="relative py-24 px-4 sm:px-6 lg:px-8 z-10">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-sm uppercase tracking-[0.3em] text-cyan-300 mb-4">Frequently Asked Questions</p>
+            <h2 className="text-4xl sm:text-5xl font-black text-white">Answers for first-time PM interview prep users.</h2>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            {faqItems.map((item, index) => (
+              <div key={index} className="rounded-3xl border border-slate-800 bg-slate-900/70 p-8">
+                <h3 className="text-xl font-semibold text-white mb-3">{item.question}</h3>
+                <p className="text-slate-400 leading-relaxed">{item.answer}</p>
               </div>
             ))}
           </div>
@@ -569,6 +681,22 @@ export default function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
+      {/* Mobile sticky CTA */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden px-4 pb-4">
+        <div className="rounded-[2rem] border border-slate-800 bg-slate-950/95 backdrop-blur-xl p-4 flex items-center justify-between gap-4 shadow-xl shadow-slate-950/40">
+          <div>
+            <p className="text-sm text-slate-400">Ready for your first PM mock interview?</p>
+            <p className="font-semibold text-white">Start practicing in minutes.</p>
+          </div>
+          <button
+            onClick={() => onNavigate?.('/signup')}
+            className="rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20"
+          >
+            Start Free
+          </button>
+        </div>
+      </div>
+
       {/* Footer */}
       <footer className="relative bg-slate-950 text-slate-400 py-16 px-4 sm:px-6 lg:px-8 border-t border-slate-900 z-10">
         <div className="max-w-7xl mx-auto">
@@ -591,7 +719,7 @@ export default function Home({ onNavigate }: HomeProps) {
                 <li><a href="#features" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>AI Mock Interviews</span></a></li>
                 <li><a href="#features" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>600+ Questions</span></a></li>
                 <li><a href="#features" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>AI Feedback</span></a></li>
-                <li><a href="#features" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>PM Frameworks</span></a></li>
+                <li><a href="#faq" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>FAQs</span></a></li>
               </ul>
             </div>
             <div>
