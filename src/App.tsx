@@ -7,10 +7,18 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import DashboardLayout from './components/DashboardLayout';
 import AdminLayout from './components/AdminLayout';
+import Seo from './components/Seo';
+import { defaultSeo, pageSeo } from './lib/seo-config';
 
 // Simple SPA Router
 function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  const currentSeo = pageSeo[currentPath] || {
+    ...defaultSeo,
+    path: currentPath,
+  };
+
 
   // When Supabase OAuth redirects to site root with tokens (e.g. producttasks.com/#access_token=...),
   // send user to /dashboard so they land in the right place
@@ -82,8 +90,12 @@ function App() {
     }
   };
 
-  return renderPage();
+  return (
+    <>
+      <Seo {...currentSeo} />
+      {renderPage()}
+    </>
+  );
 }
-
 
 export default App;

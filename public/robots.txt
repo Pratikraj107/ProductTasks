@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Disable backend and admin routes from crawler access
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+
+Sitemap: https://producttasks.com/sitemap.xml
