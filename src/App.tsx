@@ -90,9 +90,11 @@ function App() {
     }
   };
 
+  const shouldRenderSeo = currentPath !== '/';
+
   return (
     <>
-      <Seo {...currentSeo} />
+      {shouldRenderSeo && <Seo {...currentSeo} />}
       {renderPage()}
     </>
   );

@@ -613,7 +613,7 @@ export default function Home({ onNavigate }: HomeProps) {
             </div>
           </div>
           <div className="border-t border-slate-900 mt-12 pt-8 text-center text-sm text-slate-500">
-            <p>&copy; 2025 ProductTasks. All rights reserved. Built for aspiring product managers.</p>
+            <p>&copy; 2026 ProductTasks. All rights reserved. Built for aspiring product managers.</p>
           </div>
         </div>
       </footer>
