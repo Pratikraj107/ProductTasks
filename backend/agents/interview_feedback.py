@@ -84,7 +84,7 @@ class InterviewFeedbackAgent:
         """
         feedback_prompt = f"""You are an expert Product Management interview coach with 15+ years of experience conducting PM interviews at top tech companies.
 
-Evaluate this interview answer and provide comprehensive feedback.
+Evaluate this interview answer as if you were scoring a strong Product Management candidate.
 
 INTERVIEW QUESTION:
 {question}
@@ -92,34 +92,44 @@ INTERVIEW QUESTION:
 CANDIDATE'S ANSWER:
 {answer}
 
-Provide detailed feedback covering the following areas:
+Provide detailed feedback covering these areas:
 
-1. **Clarity & Communication**
+1. Clarity & Communication
    - How clear and articulate was the answer?
-   - Was the response easy to follow?
-   - Any issues with structure or flow?
+   - Was the response easy to follow, structured, and confident?
+   - Note any issues with flow, repetition, or unclear language.
 
-2. **Content Quality**
+2. Content Quality
    - Did the answer address the question directly?
-   - Was the content relevant and substantive?
-   - Were examples and details appropriate?
+   - Was the content relevant, substantive, and aligned with product leadership thinking?
+   - Did the candidate include strong examples, metrics, or trade-offs?
 
-3. **Completeness**
-   - Did the answer fully address all aspects of the question?
-   - Were important points missing?
-   - Was the answer too brief or too lengthy?
+3. Completeness
+   - Did the answer fully address all parts of the question?
+   - Were any important areas or follow-up questions overlooked?
+   - Was the length appropriate for a concise but complete response?
 
-4. **PM Framework Usage**
-   - Did the candidate use appropriate PM frameworks (CIRCLES, AARM, STAR, etc.)?
-   - Was the framework applied correctly?
-   - Could better frameworks have been used?
+4. PM Framework Usage
+   - Did the candidate use a relevant PM framework (CIRCLES, AARM, STAR, etc.)?
+   - Was the framework applied correctly and usefully?
+   - If no framework was used, explain what would have improved the answer.
 
-5. **Overall Assessment**
-   - Strengths of the answer
-   - Areas for improvement
-   - Specific actionable recommendations
+5. Overall Assessment
+   - Summarize the answer quality clearly.
+   - Identify the most important strengths.
+   - Provide the highest-impact improvements.
 
-Format your response as a structured JSON object with this exact structure:
+For each section:
+- Provide a numeric score from 0 to 10.
+- Provide a concise paragraph of feedback.
+- Provide at least 2 strengths.
+- Provide at least 2 improvements.
+
+In the frameworks section, also include:
+- frameworks_used: the actual frameworks present in the answer.
+- frameworks_recommended: the best frameworks for this question.
+
+Format your response as valid JSON only with this exact structure:
 {{
   "clarity": {{
     "score": <number 0-10>,
@@ -156,10 +166,10 @@ Format your response as a structured JSON object with this exact structure:
   }}
 }}
 
-Return ONLY valid JSON, no additional text or markdown formatting."""
+Return ONLY valid JSON, with no markdown, code fences, or extra commentary."""
 
         messages = [
-            {"role": "system", "content": "You are an expert Product Management interview coach. Always respond with valid JSON only."},
+            {"role": "system", "content": "You are an expert Product Management interview coach. Respond with valid JSON only. Do not add any extra prose or markdown."},
             {"role": "user", "content": feedback_prompt}
         ]
         
