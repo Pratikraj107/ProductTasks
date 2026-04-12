@@ -3,6 +3,9 @@ import { AuthProvider } from './contexts/AuthContext';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import Home from './pages/Home';
+import About from './pages/About';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import DashboardLayout from './components/DashboardLayout';
@@ -71,6 +74,24 @@ function App() {
         return (
           <AuthProvider navigate={navigate}>
             <SignUp onNavigate={navigate} />
+          </AuthProvider>
+        );
+      case '/about':
+        return (
+          <AuthProvider navigate={navigate}>
+            <About />
+          </AuthProvider>
+        );
+      case '/privacy':
+        return (
+          <AuthProvider navigate={navigate}>
+            <Privacy />
+          </AuthProvider>
+        );
+      case '/terms':
+        return (
+          <AuthProvider navigate={navigate}>
+            <Terms />
           </AuthProvider>
         );
       case '/':

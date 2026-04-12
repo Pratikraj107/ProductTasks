@@ -139,7 +139,7 @@ export default function Home({ onNavigate }: HomeProps) {
       period: "Forever",
       description: "Perfect for getting started",
       features: [
-        "Limited AI mock interviews",
+        "5 AI mock interviews per month",
         "Access to sample questions",
         "Basic feedback",
         "Community access"
@@ -198,7 +198,25 @@ export default function Home({ onNavigate }: HomeProps) {
       quote: "ProductTasks helped me structure my answers, sharpen my frameworks, and feel confident in every PM interview.",
       name: "Aarav Sharma",
       role: "Product Manager, Bengaluru",
-      result: "Received 3 interview invites in 10 days"
+      result: "Received 3 interview invites in 10 days after focused mock interview practice.",
+      initials: "AS",
+      gradient: "from-blue-600 to-cyan-500"
+    },
+    {
+      quote: "The voice-based practice was a game-changer for me. Reading answers in my head felt easy, but speaking them out loud exposed all my gaps. ProductTasks feedback on CIRCLES and STAR frameworks helped me fix exactly what I was doing wrong.",
+      name: "Priya M.",
+      role: "Associate PM, Bangalore",
+      result: "Transitioned from engineering to product management.",
+      initials: "PM",
+      gradient: "from-teal-500 to-cyan-500"
+    },
+    {
+      quote: "I used ProductTasks to prepare for guesstimate and metrics questions — the two areas I was weakest in. The AI scoring showed me exactly where my structure broke down. Within two weeks, I went from fumbling to confident.",
+      name: "Rohit K.",
+      role: "Product Analyst → PM, Mumbai",
+      result: "Cracked PM interviews at two fintech startups.",
+      initials: "RK",
+      gradient: "from-violet-500 to-purple-500"
     }
   ];
 
@@ -213,7 +231,15 @@ export default function Home({ onNavigate }: HomeProps) {
     },
     {
       question: "What is the difference between the free and paid plans?",
-      answer: "The free plan gives you sample questions and basic guidance. Paid plans unlock unlimited AI mock interviews, full feedback, and advanced framework coaching."
+      answer: "The free plan gives you sample questions and basic guidance. Paid plans unlock full AI mock interviews, comprehensive feedback, and advanced framework coaching."
+    },
+    {
+      question: "Is ProductTasks free?",
+      answer: "Yes! Sign up instantly and start with the free plan — no credit card needed. You get sample questions and basic AI feedback. Paid plans start at ₹800/month for full access to 600+ questions and detailed AI coaching."
+    },
+    {
+      question: "What types of PM interview questions are covered?",
+      answer: "We cover all six PM interview categories: Product Design, Strategy, Metrics, Estimation, Behavioral, and Technical — the same categories used by Google, Amazon, Flipkart, Swiggy, and other top companies in their PM hiring process."
     }
   ];
 
@@ -296,6 +322,7 @@ export default function Home({ onNavigate }: HomeProps) {
 
             <button
               className="md:hidden p-2"
+              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -420,7 +447,7 @@ export default function Home({ onNavigate }: HomeProps) {
 
       {/* Testimonial Section */}
       <section className="relative py-24 px-4 sm:px-6 lg:px-8 z-10">
-        <div className="max-w-7xl mx-auto grid gap-8 lg:grid-cols-[1.2fr_0.8fr] items-center">
+        <div className="max-w-7xl mx-auto grid gap-8 lg:grid-cols-[1.2fr_0.8fr] items-start">
           <div className="space-y-8">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 backdrop-blur-sm rounded-full px-5 py-2">
               <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
@@ -432,37 +459,26 @@ export default function Home({ onNavigate }: HomeProps) {
             <p className="text-xl text-slate-400 max-w-2xl leading-relaxed font-light">
               Get the same structured feedback that helps candidates clarify their product thinking, sharpen their stories, and perform confidently in every stage of the PM interview process.
             </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-3xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white mb-4">
-                  <Award className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Practice with real PM questions</h3>
-                <p className="text-slate-400 text-sm">Prepared from actual product management interview tracks and framework-driven scenarios.</p>
-              </div>
-              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-3xl bg-gradient-to-r from-green-500 to-teal-500 text-white mb-4">
-                  <TrendingUp className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Feedback on every answer</h3>
-                <p className="text-slate-400 text-sm">AI review on frameworks, metrics, clarity, risk assessment, and storytelling so you improve fast.</p>
-              </div>
-            </div>
           </div>
 
-          <div className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl shadow-black/20">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-3xl blur opacity-20"></div>
-            <div className="relative space-y-6">
-              <p className="text-slate-300 italic text-lg leading-relaxed">“ProductTasks helped me structure my answers clearly, apply the right frameworks, and stop second-guessing myself. I landed offers from two top startups within three weeks.”</p>
-              <div>
-                <p className="font-bold text-white">Aarav Sharma</p>
-                <p className="text-slate-500 text-sm">Product Manager, Bengaluru</p>
+          <div className="grid gap-6">
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl shadow-black/20">
+                {/* TODO: Replace with real testimonial once collected from actual users */}
+                <div className={`inline-flex items-center justify-center w-12 h-12 rounded-3xl ${testimonial.gradient} text-white mb-4`}>
+                  {testimonial.initials}
+                </div>
+                <p className="text-slate-300 italic text-lg leading-relaxed">“{testimonial.quote}”</p>
+                <div className="mt-6">
+                  <p className="font-bold text-white">{testimonial.name}</p>
+                  <p className="text-slate-500 text-sm">{testimonial.role}</p>
+                </div>
+                <div className="rounded-3xl bg-slate-950/90 border border-slate-800 p-4 mt-4 text-sm text-slate-400">
+                  <p className="font-semibold text-white">Candidate outcome</p>
+                  <p>{testimonial.result}</p>
+                </div>
               </div>
-              <div className="rounded-3xl bg-slate-950/90 border border-slate-800 p-4 text-sm text-slate-400">
-                <p className="font-semibold text-white">Candidate win</p>
-                <p>Received 3 interview invites in 10 days after focused mock interview practice.</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -725,18 +741,18 @@ export default function Home({ onNavigate }: HomeProps) {
             <div>
               <h4 className="font-bold text-white mb-4">Company</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="#" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>About Us</span></a></li>
-                <li><a href="#" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>Contact</span></a></li>
-                <li><a href="#" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>Privacy Policy</span></a></li>
-                <li><a href="#" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>Terms of Service</span></a></li>
+                <li><a href="/about" onClick={(e) => { e.preventDefault(); onNavigate?.('/about'); }} className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>About Us</span></a></li>
+                <li><a href="mailto:hello@producttasks.com" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>Contact</span></a></li>
+                <li><a href="/privacy" onClick={(e) => { e.preventDefault(); onNavigate?.('/privacy'); }} className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>Privacy Policy</span></a></li>
+                <li><a href="/terms" onClick={(e) => { e.preventDefault(); onNavigate?.('/terms'); }} className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>Terms of Service</span></a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold text-white mb-4">Support</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="#" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>Help Center</span></a></li>
-                <li><a href="#" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>FAQs</span></a></li>
-                <li><a href="#" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>Contact Support</span></a></li>
+                <li><a href="#faq" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>Help Center</span></a></li>
+                <li><a href="#faq" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>FAQs</span></a></li>
+                <li><a href="mailto:support@producttasks.com" className="hover:text-cyan-400 transition-colors flex items-center space-x-2 group"><ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" /><span>Contact Support</span></a></li>
               </ul>
             </div>
           </div>

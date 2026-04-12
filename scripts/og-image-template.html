@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>ProductTasks OG Image Template</title>
+  <style>
+    body {
+      margin: 0;
+      width: 1200px;
+      height: 630px;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: white;
+      overflow: hidden;
+      position: relative;
+    }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.35;
+    }
+    .orb.blue {
+      width: 450px;
+      height: 450px;
+      top: -120px;
+      left: -100px;
+      background: radial-gradient(circle, rgba(56,189,248,0.18), transparent 55%);
+    }
+    .orb.cyan {
+      width: 420px;
+      height: 420px;
+      bottom: -140px;
+      right: -120px;
+      background: radial-gradient(circle, rgba(6,182,212,0.16), transparent 55%);
+    }
+    .content {
+      position: relative;
+      text-align: center;
+      max-width: 920px;
+      padding: 40px;
+    }
+    .brand {
+      font-size: 72px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin-bottom: 24px;
+    }
+    .tagline {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #60a5fa, #22d3ee);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 28px;
+    }
+    .details {
+      font-size: 20px;
+      color: #94a3b8;
+      letter-spacing: 0.03em;
+    }
+  </style>
+</head>
+<body>
+  <div class="orb blue"></div>
+  <div class="orb cyan"></div>
+  <div class="content">
+    <div class="brand">ProductTasks</div>
+    <div class="tagline">AI Mock Interviews for Product Managers</div>
+    <div class="details">600+ Questions · Instant AI Feedback · PM Frameworks</div>
+  </div>
+  <!-- Open this file in a browser at 1200x630 viewport and screenshot it as og-image.png, then place in public/ -->
+</body>
+</html>

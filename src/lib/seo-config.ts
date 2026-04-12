@@ -65,4 +65,25 @@ export const pageSeo: Record<string, SeoPageConfig> = {
     keywords: ['admin', 'product tasks admin', 'site management'],
     image: siteConfig.ogImage,
   },
+  '/about': {
+    title: 'About ProductTasks — AI PM Interview Prep Platform',
+    description: 'Learn about ProductTasks, the AI-powered platform helping product managers prepare for interviews with 600+ questions and instant feedback.',
+    path: '/about',
+    keywords: ['about ProductTasks', 'PM interview prep platform', 'AI interview preparation'],
+    image: siteConfig.ogImage,
+  },
+  '/privacy': {
+    title: 'Privacy Policy — ProductTasks',
+    description: 'ProductTasks privacy policy. Learn how we collect, use, and protect your data.',
+    path: '/privacy',
+    keywords: ['privacy policy', 'data protection', 'ProductTasks privacy'],
+    image: siteConfig.ogImage,
+  },
+  '/terms': {
+    title: 'Terms of Service — ProductTasks',
+    description: 'ProductTasks terms of service. Review the terms governing your use of our PM interview prep platform.',
+    path: '/terms',
+    keywords: ['terms of service', 'ProductTasks terms', 'user agreement'],
+    image: siteConfig.ogImage,
+  },
 };
