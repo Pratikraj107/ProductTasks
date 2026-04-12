@@ -67,7 +67,7 @@ export default function TopicDetail({ topicId, onBack, onSubtopicClick }: TopicD
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent"></div>
           <p className="mt-4 text-slate-600 dark:text-slate-400">Loading...</p>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -245,6 +245,6 @@ export default function TopicDetail({ topicId, onBack, onSubtopicClick }: TopicD
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -59,7 +59,7 @@ export default function Topics({ onTopicClick }: TopicsProps) {
             <p className="mt-4 text-slate-600 dark:text-slate-400">Loading topics...</p>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -107,6 +107,6 @@ export default function Topics({ onTopicClick }: TopicsProps) {
           })}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

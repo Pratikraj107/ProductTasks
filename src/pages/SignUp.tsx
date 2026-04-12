@@ -136,7 +136,7 @@ export default function SignUp({ onNavigate }: SignUpProps) {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -338,6 +338,6 @@ export default function SignUp({ onNavigate }: SignUpProps) {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

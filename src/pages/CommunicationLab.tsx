@@ -179,6 +179,6 @@ export default function CommunicationLab() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

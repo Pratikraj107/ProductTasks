@@ -190,7 +190,7 @@ export default function Tasks({ onNavigateToSubtopic }: TasksProps = {}) {
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent"></div>
           <p className="mt-4 text-slate-600 dark:text-slate-400">Loading tasks...</p>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -412,6 +412,6 @@ export default function Tasks({ onNavigateToSubtopic }: TasksProps = {}) {
         onLearnMore={selectedTask?.subtopic_id ? () => handleLearnMore(selectedTask.subtopic_id!) : undefined}
         isCompleted={selectedTask ? completions.some(c => c.tasks_id === selectedTask.id && c.completed) : false}
       />
-    </div>
+    </main>
   );
 }

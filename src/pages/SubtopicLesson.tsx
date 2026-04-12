@@ -86,7 +86,7 @@ export default function SubtopicLesson({ subtopicId, onBack }: SubtopicLessonPro
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent"></div>
           <p className="mt-4 text-slate-600 dark:text-slate-400">Loading lesson...</p>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -102,7 +102,7 @@ export default function SubtopicLesson({ subtopicId, onBack }: SubtopicLessonPro
           <span>Back</span>
         </button>
         <p className="text-white">Lesson not found</p>
-      </div>
+      </main>
     );
   }
 
@@ -386,6 +386,6 @@ export default function SubtopicLesson({ subtopicId, onBack }: SubtopicLessonPro
         }}
         isCompleted={selectedTask ? completions.some(c => c.tasks_id === selectedTask.id && c.completed) : false}
       />
-    </div>
+    </main>
   );
 }

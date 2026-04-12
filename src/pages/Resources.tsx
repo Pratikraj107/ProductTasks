@@ -97,7 +97,7 @@ export default function Resources() {
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent"></div>
           <p className="mt-4 text-slate-600 dark:text-slate-400">Loading resources...</p>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -201,6 +201,6 @@ export default function Resources() {
           </a>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

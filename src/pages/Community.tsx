@@ -59,6 +59,11 @@ export default function Community() {
   ];
 
   const featuredMembers = [
+    { name: 'Sarah Chen', role: 'Senior PM at Google', avatar: 'SC' },
+    { name: 'Michael Torres', role: 'Product Lead at Meta', avatar: 'MT' },
+    { name: 'Priya Patel', role: 'PM at Amazon', avatar: 'PP' },
+    { name: 'James Wilson', role: 'Director of Product', avatar: 'JW' },
+  ];
 
   const seo = (
     <SEOHead
@@ -68,11 +73,6 @@ export default function Community() {
       keywords={['product management community', 'PM peer network', 'career advice']}
     />
   );
-    { name: 'Sarah Chen', role: 'Senior PM at Google', avatar: 'SC' },
-    { name: 'Michael Torres', role: 'Product Lead at Meta', avatar: 'MT' },
-    { name: 'Priya Patel', role: 'PM at Amazon', avatar: 'PP' },
-    { name: 'James Wilson', role: 'Director of Product', avatar: 'JW' },
-  ];
 
   return (
     <main className="p-8">
@@ -227,6 +227,6 @@ export default function Community() {
           </a>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

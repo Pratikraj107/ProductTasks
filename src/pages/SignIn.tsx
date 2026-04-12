@@ -250,6 +250,6 @@ export default function SignIn({ onNavigate }: SignInProps) {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

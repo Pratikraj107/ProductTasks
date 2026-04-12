@@ -77,7 +77,7 @@ export default function Tools() {
       {activeTool === 'product_details' && <ProductDetails onBack={() => setActiveTool(null)} />}
       {activeTool === 'journey_map' && <JourneyMap onBack={() => setActiveTool(null)} />}
       {activeTool === 'vision_board' && <ProductVisionBoard onBack={() => setActiveTool(null)} />}
-    </div>
+    </main>
   );
 }
 
