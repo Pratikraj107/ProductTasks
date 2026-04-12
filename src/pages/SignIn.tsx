@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, Rocket /* , Smartphone */ } from 'lucide-react';
+import SEOHead from '../components/SEOHead';
 // import MobileAuthForm from '../components/MobileAuth/MobileAuthForm'; // uncomment when re-enabling phone login
 
 type SignInTab = 'email' | 'phone';
@@ -18,6 +19,15 @@ export default function SignIn({ onNavigate }: SignInProps) {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { user, signIn, signInWithGoogle } = useAuth();
+
+  const seo = (
+    <SEOHead
+      title="Login to ProductTasks — Continue Your PM Interview Prep"
+      description="Log in to ProductTasks to continue your PM interview preparation. Access AI mock interviews, saved progress, and question practice."
+      canonical="https://producttasks.com/signin"
+      keywords={['login', 'PM interview prep', 'product manager login']}
+    />
+  );
 
   useEffect(() => {
     if (user) onNavigate?.('/dashboard');
@@ -48,7 +58,7 @@ export default function SignIn({ onNavigate }: SignInProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden relative flex items-center justify-center px-4 py-12">
+    <main className="min-h-screen bg-slate-950 text-white overflow-x-hidden relative flex items-center justify-center px-4 py-12">
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-950 to-slate-950"></div>
         <div
@@ -63,6 +73,7 @@ export default function SignIn({ onNavigate }: SignInProps) {
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
       
+      {seo}
       {/* Logo in top left corner */}
       <div className="fixed top-6 left-6 z-20">
         <button
@@ -199,6 +210,16 @@ export default function SignIn({ onNavigate }: SignInProps) {
                   className="w-full px-4 py-3 rounded-lg bg-slate-800/50 border border-slate-700 text-white placeholder-slate-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all outline-none"
                   placeholder="Enter your password"
                 />
+              </div>
+
+              <div className="flex justify-end mb-3">
+                <a
+                  href="mailto:support@producttasks.com"
+                  className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                  aria-label="Forgot password support"
+                >
+                  Forgot password?
+                </a>
               </div>
 
               <button

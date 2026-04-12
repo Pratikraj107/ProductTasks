@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import TaskModal from '../components/TaskModal';
+import SEOHead from '../components/SEOHead';
 import type { Task, TasksCompletion } from '../lib/database.types';
 
 interface TasksProps {
@@ -16,6 +17,15 @@ export default function Tasks({ onNavigateToSubtopic }: TasksProps = {}) {
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [boardView, setBoardView] = useState(false);
+
+  const seo = (
+    <SEOHead
+      title="AI Product Management Roadmap — ProductTasks"
+      description="Follow a guided PM roadmap with tasks, milestones, and learning checkpoints to sharpen your product management skills."
+      canonical="https://producttasks.com/dashboard/tasks"
+      keywords={['product management roadmap', 'PM tasks', 'learning plan']}
+    />
+  );
 
   useEffect(() => {
     async function fetchData() {
@@ -174,7 +184,8 @@ export default function Tasks({ onNavigateToSubtopic }: TasksProps = {}) {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <main className="p-8">
+        {seo}
         <div className="text-center py-20">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent"></div>
           <p className="mt-4 text-slate-600 dark:text-slate-400">Loading tasks...</p>
@@ -184,7 +195,8 @@ export default function Tasks({ onNavigateToSubtopic }: TasksProps = {}) {
   }
 
   return (
-    <div className="p-8">
+    <main className="p-8">
+      {seo}
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>

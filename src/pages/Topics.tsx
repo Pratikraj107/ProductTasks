@@ -2,6 +2,7 @@ import { Compass, Target, Users, Calendar, TrendingUp, CheckCircle2, Lightbulb }
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Topic } from '../lib/database.types';
+import SEOHead from '../components/SEOHead';
 
 interface TopicsProps {
   onTopicClick: (topicId: string) => void;
@@ -20,6 +21,15 @@ const iconMap: Record<string, any> = {
 export default function Topics({ onTopicClick }: TopicsProps) {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const seo = (
+    <SEOHead
+      title="Product Management Learning Path — ProductTasks"
+      description="Explore ProductTasks structured PM learning path with topics, lessons, and progress tracking to master product management skills."
+      canonical="https://producttasks.com/dashboard/topics"
+      keywords={['product management learning path', 'PM topics', 'product strategy learning']}
+    />
+  );
 
   useEffect(() => {
     async function fetchTopics() {
@@ -41,7 +51,8 @@ export default function Topics({ onTopicClick }: TopicsProps) {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <main className="p-8">
+        {seo}
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-20">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent"></div>
@@ -53,7 +64,8 @@ export default function Topics({ onTopicClick }: TopicsProps) {
   }
 
   return (
-    <div className="p-8">
+    <main className="p-8">
+      {seo}
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-5xl font-black text-slate-900 dark:text-white mb-4">Learning Path</h1>

@@ -35,32 +35,32 @@ export const defaultSeo: SeoPageConfig = {
 export const pageSeo: Record<string, SeoPageConfig> = {
   '/': defaultSeo,
   '/signin': {
-    title: 'Sign In | ProductTasks',
+    title: 'Login to ProductTasks — Continue Your PM Interview Prep',
     description:
-      'Sign in to ProductTasks and continue your product management interview preparation with AI-powered mock interviews and feedback.',
+      'Log in to ProductTasks to continue your PM interview preparation and access AI mock interview feedback, saved progress, and question practice.',
     path: '/signin',
-    keywords: ['sign in', 'product management login', 'PM practice login'],
+    keywords: ['login', 'product management login', 'PM interview prep'],
     image: siteConfig.ogImage,
   },
   '/signup': {
-    title: 'Sign Up | ProductTasks',
+    title: 'Sign Up Free — Start Practicing PM Interviews Today | ProductTasks',
     description:
-      'Create your ProductTasks account and start practicing product management interviews with expert feedback, real-world PM questions, and structured learning.',
+      'Create your free ProductTasks account and start practicing PM interview questions with AI-powered feedback, real-world scenarios, and progress tracking.',
     path: '/signup',
-    keywords: ['sign up', 'product management account', 'PM practice registration'],
+    keywords: ['sign up', 'product management signup', 'PM interview preparation'],
     image: siteConfig.ogImage,
   },
   '/dashboard': {
-    title: 'ProductTasks Dashboard',
+    title: 'Your Dashboard — ProductTasks PM Interview Prep',
     description:
-      'Your ProductTasks dashboard for managing AI mock interviews, resources, and product management preparation.',
+      'Your ProductTasks dashboard for tracking PM interview practice, mock interview results, learning progress, and productivity resources.',
     path: '/dashboard',
-    keywords: ['product tasks dashboard', 'PM study dashboard', 'product management practice'],
+    keywords: ['dashboard', 'PM interview dashboard', 'product management practice'],
     image: siteConfig.ogImage,
   },
   '/admin': {
-    title: 'ProductTasks Admin',
-    description: 'Admin tools for ProductTasks content and user management.',
+    title: 'ProductTasks Admin — Manage Content and Questions',
+    description: 'Admin tools for ProductTasks content, topics, lessons, and interview question management.',
     path: '/admin',
     keywords: ['admin', 'product tasks admin', 'site management'],
     image: siteConfig.ogImage,

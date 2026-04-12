@@ -3,11 +3,21 @@ import { Mic, Minimize2, TrendingUp, ArrowRight, FileText } from 'lucide-react';
 import AnswerCompressionMode from '../components/communication/AnswerCompressionMode';
 import ExecutivePresenceMode from '../components/communication/ExecutivePresenceMode';
 import GenerateScriptMode from '../components/communication/GenerateScriptMode';
+import SEOHead from '../components/SEOHead';
 
 type Mode = 'landing' | 'compression' | 'presence' | 'generate-script';
 
 export default function CommunicationLab() {
   const [currentMode, setCurrentMode] = useState<Mode>('landing');
+
+  const seo = (
+    <SEOHead
+      title="Communication Lab — ProductTasks"
+      description="Practice your spoken PM interview answers, improve clarity, structure, and executive presence in the Communication Lab."
+      canonical="https://producttasks.com/dashboard/communication"
+      keywords={['communication lab', 'PM speaking practice', 'executive presence']}
+    />
+  );
 
   if (currentMode === 'compression') {
     return <AnswerCompressionMode onBack={() => setCurrentMode('landing')} />;
@@ -22,7 +32,8 @@ export default function CommunicationLab() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto">
+    <main className="p-6 md:p-8 max-w-6xl mx-auto">
+      {seo}
       <div className="mb-8">
         <div className="flex items-center space-x-3 mb-4">
           <div className="relative">

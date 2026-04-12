@@ -4,6 +4,7 @@ import DOMPurify from 'dompurify';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import TaskModal from '../components/TaskModal';
+import SEOHead from '../components/SEOHead';
 import type { Subtopic, Content, Task, TasksCompletion, Resource } from '../lib/database.types';
 
 interface SubtopicLessonProps {
@@ -21,6 +22,15 @@ export default function SubtopicLesson({ subtopicId, onBack }: SubtopicLessonPro
   const [completions, setCompletions] = useState<TasksCompletion[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const seo = (
+    <SEOHead
+      title={`Product Management Lesson — ${subtopic?.title || 'Lesson'} | ProductTasks`}
+      description={`Review the lesson content and tasks for ${subtopic?.title || 'this PM topic'} with practical examples and learning resources.`}
+      canonical={`https://producttasks.com/dashboard/topics/lessons/${subtopic?.id || ''}`}
+      keywords={['product management lesson', 'PM learning', subtopic?.title || 'lesson']}
+    />
+  );
 
   useEffect(() => {
     async function fetchData() {
@@ -70,7 +80,8 @@ export default function SubtopicLesson({ subtopicId, onBack }: SubtopicLessonPro
 
   if (loading) {
     return (
-      <div className="p-8">
+      <main className="p-8">
+        {seo}
         <div className="text-center py-20">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent"></div>
           <p className="mt-4 text-slate-600 dark:text-slate-400">Loading lesson...</p>
@@ -81,7 +92,8 @@ export default function SubtopicLesson({ subtopicId, onBack }: SubtopicLessonPro
 
   if (!subtopic) {
     return (
-      <div className="p-8">
+      <main className="p-8">
+        {seo}
         <button
           onClick={onBack}
           className="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors mb-8"
@@ -168,7 +180,8 @@ export default function SubtopicLesson({ subtopicId, onBack }: SubtopicLessonPro
   };
 
   return (
-    <div className="p-8">
+    <main className="p-8">
+      {seo}
       <button
         onClick={onBack}
         className="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors mb-8 group"

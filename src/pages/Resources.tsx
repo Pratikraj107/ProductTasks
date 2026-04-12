@@ -1,6 +1,7 @@
 import { Link, BookOpen, Video, FileText, ExternalLink, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import SEOHead from '../components/SEOHead';
 import type { Resource } from '../lib/database.types';
 
 interface CategoryConfig {
@@ -69,6 +70,15 @@ export default function Resources() {
     return resources.filter(resource => resource.type === type);
   };
 
+  const seo = (
+    <SEOHead
+      title="Product Management Resources — ProductTasks"
+      description="Access curated PM resources, case studies, templates, and videos to support your product management interview and career preparation."
+      canonical="https://producttasks.com/dashboard/resources"
+      keywords={['product management resources', 'PM templates', 'product management reading']}
+    />
+  );
+
   const handleResourceClick = (resourceLink: string | null) => {
     if (resourceLink) {
       window.open(resourceLink, '_blank', 'noopener,noreferrer');
@@ -81,7 +91,8 @@ export default function Resources() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <main className="p-8">
+        {seo}
         <div className="text-center py-20">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent"></div>
           <p className="mt-4 text-slate-600 dark:text-slate-400">Loading resources...</p>
@@ -91,7 +102,8 @@ export default function Resources() {
   }
 
   return (
-    <div className="p-8">
+    <main className="p-8">
+      {seo}
       <div className="mb-8">
         <h1 className="text-4xl font-black text-white mb-2">Product Resources</h1>
         <p className="text-slate-400">Curated collection of the best PM resources</p>

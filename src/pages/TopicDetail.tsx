@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { Topic, Subtopic, UserProgress } from '../lib/database.types';
+import SEOHead from '../components/SEOHead';
 
 interface TopicDetailProps {
   topicId: string;
@@ -16,6 +17,15 @@ export default function TopicDetail({ topicId, onBack, onSubtopicClick }: TopicD
   const [subtopics, setSubtopics] = useState<Subtopic[]>([]);
   const [progress, setProgress] = useState<UserProgress[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const seo = (
+    <SEOHead
+      title={`Product Management Topic — ${topic?.title || 'Topic'} | ProductTasks`}
+      description={`Explore ${topic?.title || 'this topic'} in ProductTasks with lessons, progress tracking, and practical PM learning content.`}
+      canonical={`https://producttasks.com/dashboard/topics/${topic?.id || ''}`}
+      keywords={['product management topic', 'PM learning', topic?.title || 'PM topic']}
+    />
+  );
 
   useEffect(() => {
     async function fetchData() {
@@ -51,7 +61,8 @@ export default function TopicDetail({ topicId, onBack, onSubtopicClick }: TopicD
 
   if (loading) {
     return (
-      <div className="p-8">
+      <main className="p-8">
+        {seo}
         <div className="text-center py-20">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent"></div>
           <p className="mt-4 text-slate-600 dark:text-slate-400">Loading...</p>
@@ -83,7 +94,8 @@ export default function TopicDetail({ topicId, onBack, onSubtopicClick }: TopicD
   const topicGradient = topic.gradient || 'from-blue-500 to-cyan-500';
 
   return (
-    <div className="p-8">
+    <main className="p-8">
+      {seo}
       <button
         onClick={onBack}
         className="flex items-center space-x-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors mb-8 group"

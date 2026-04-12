@@ -1,4 +1,5 @@
 import { Users, MessageCircle, Calendar, ExternalLink, Star } from 'lucide-react';
+import SEOHead from '../components/SEOHead';
 
 export default function Community() {
   const channels = [
@@ -58,6 +59,15 @@ export default function Community() {
   ];
 
   const featuredMembers = [
+
+  const seo = (
+    <SEOHead
+      title="Product Management Community — ProductTasks"
+      description="Join the ProductTasks community to collaborate on PM interview prep, product insights, and career advice from peers and coaches."
+      canonical="https://producttasks.com/dashboard/community"
+      keywords={['product management community', 'PM peer network', 'career advice']}
+    />
+  );
     { name: 'Sarah Chen', role: 'Senior PM at Google', avatar: 'SC' },
     { name: 'Michael Torres', role: 'Product Lead at Meta', avatar: 'MT' },
     { name: 'Priya Patel', role: 'PM at Amazon', avatar: 'PP' },
@@ -65,7 +75,8 @@ export default function Community() {
   ];
 
   return (
-    <div className="p-8">
+    <main className="p-8">
+      {seo}
       <div className="mb-8">
         <h1 className="text-4xl font-black text-white mb-2">Join Community</h1>
         <p className="text-slate-400">Connect with PMs worldwide and grow together</p>

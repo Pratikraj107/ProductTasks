@@ -6,6 +6,7 @@ import type { InterviewQuestion } from '../lib/database.types';
 import MockInterviewModal from '../components/MockInterviewModal';
 import UpgradeModal from '../components/UpgradeModal';
 import { useInterviewUsage } from '../hooks/useInterviewUsage';
+import SEOHead from '../components/SEOHead';
 
 interface ParsedQuestion {
   question: string;
@@ -45,6 +46,23 @@ export default function CategoryDetail({ category, onBack }: CategoryDetailProps
     questionIndex: 0
   });
   const [isOpeningInterview, setIsOpeningInterview] = useState(false);
+
+  const seo = (
+    <SEOHead
+      title={`${category} Interview Questions — AI Practice & Feedback | ProductTasks`}
+      description={`Practice ${category} PM interview questions with AI feedback, example answers, and category-specific mock interview guidance.`}
+      canonical={`https://producttasks.com/dashboard/interview/${encodeURIComponent(category)}`}
+      keywords={['PM interview questions', category, 'AI mock interview']}
+      structuredData={{
+        '@context': 'https://schema.org',
+        '@type': 'LearningResource',
+        'name': `${category} Interview Questions`,
+        'educationalLevel': 'Intermediate',
+        'learningResourceType': 'Practice question',
+        'about': 'Product Management Interview'
+      }}
+    />
+  );
 
   const categoryGradients = {
     'Product Design': 'from-blue-500 to-cyan-500',
@@ -226,7 +244,8 @@ export default function CategoryDetail({ category, onBack }: CategoryDetailProps
 
   if (loading) {
     return (
-      <div className="p-8">
+      <main className="p-8">
+        {seo}
         <div className="text-center py-20">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent"></div>
           <p className="mt-4 text-slate-600 dark:text-slate-400">Loading questions...</p>
@@ -252,7 +271,8 @@ export default function CategoryDetail({ category, onBack }: CategoryDetailProps
   }
 
   return (
-    <div className="p-8">
+    <main className="p-8">
+      {seo}
       <div className="mb-8">
         <button
           onClick={goBack}

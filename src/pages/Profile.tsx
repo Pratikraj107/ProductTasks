@@ -1,11 +1,21 @@
 import { User, Mail, Calendar, Award, Edit2, Shield, Zap, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useInterviewUsage } from '../hooks/useInterviewUsage';
+import SEOHead from '../components/SEOHead';
 
 export default function Profile() {
   const { user } = useAuth();
   const { usageStatus } = useInterviewUsage();
   const isFreeUser = !usageStatus || usageStatus.plan_type === 'free';
+
+  const seo = (
+    <SEOHead
+      title="Account Settings | ProductTasks"
+      description="Manage your ProductTasks account, billing status, and interview progress. Access upgrade options and profile settings."
+      canonical="https://producttasks.com/dashboard/profile"
+      keywords={['account settings', 'profile', 'PM prep account']}
+    />
+  );
 
   const achievements = [
     { title: 'Early Adopter', description: 'Joined ProductTasks', icon: '🚀', earned: true },
@@ -24,7 +34,8 @@ export default function Profile() {
   ];
 
   return (
-    <div className="p-8">
+    <main className="p-8">
+      {seo}
       <div className="mb-8">
         <h1 className="text-4xl font-black text-white mb-2">Profile</h1>
         <p className="text-slate-400">Manage your account and track your progress</p>

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { TasksCompletion, Subtopic, Task } from '../lib/database.types';
+import SEOHead from '../components/SEOHead';
 
 interface DashboardStats {
   learningStreak: number;
@@ -33,6 +34,15 @@ export default function Dashboard() {
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const seo = (
+    <SEOHead
+      title="Your Dashboard — ProductTasks PM Interview Prep"
+      description="Track your PM interview practice, review AI mock interview results, and continue your ProductTasks learning path from one dashboard."
+      canonical="https://producttasks.com/dashboard"
+      keywords={['dashboard', 'PM interview prep', 'product management progress']}
+    />
+  );
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -312,7 +322,8 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <main className="p-8">
+        {seo}
         <div className="text-center py-20">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent"></div>
           <p className="mt-4 text-slate-600 dark:text-slate-400">Loading dashboard...</p>
@@ -322,7 +333,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-8">
+    <main className="p-8">
+      {seo}
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>

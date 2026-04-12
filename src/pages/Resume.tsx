@@ -1,6 +1,7 @@
 import { FileText, Plus, X, Download, Mail, Phone, MapPin, Linkedin, Globe, Image as ImageIcon, Layout, Upload, Sparkles } from 'lucide-react';
 import { useRef, useState, memo } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
+import SEOHead from '../components/SEOHead';
 
 interface Experience {
   id: string;
@@ -97,6 +98,15 @@ export default function Resume() {
   const [reviewResult, setReviewResult] = useState<any>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   
+  const seo = (
+    <SEOHead
+      title="Resume Builder — ProductTasks"
+      description="Build a professional PM resume quickly with guided templates, AI review, and export options for your job search."
+      canonical="https://producttasks.com/dashboard/resume"
+      keywords={['resume builder', 'PM resume', 'job application resume']}
+    />
+  );
+
   const [personalInfo, setPersonalInfo] = useState({
     fullName: '',
     email: '',
@@ -700,7 +710,8 @@ export default function Resume() {
   };
 
   return (
-    <div className="p-8 h-[calc(100vh-4rem)] flex flex-col">
+    <main className="p-8 h-[calc(100vh-4rem)] flex flex-col">
+      {seo}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>

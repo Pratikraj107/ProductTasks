@@ -1,13 +1,24 @@
 import { Wrench, Users, Target, FileText, Search, Plus, Download, Globe, Crosshair, Zap, DollarSign, BarChart3, Wallet, Megaphone, Shield } from 'lucide-react';
 import { useRef, useState } from 'react';
+import SEOHead from '../components/SEOHead';
 
 type ToolKey = 'user_persona' | 'jtbd' | 'market_research' | 'product_details' | 'journey_map' | 'vision_board';
 
 export default function Tools() {
   const [activeTool, setActiveTool] = useState<ToolKey | null>(null);
 
+  const seo = (
+    <SEOHead
+      title="PM Productivity Tools — ProductTasks"
+      description="Use ProductTasks built-in PM tools for personas, journey maps, research, product discovery, and more."
+      canonical="https://producttasks.com/dashboard/tools"
+      keywords={['product management tools', 'PM templates', 'productivity tools']}
+    />
+  );
+
   return (
-    <div className="p-8">
+    <main className="p-8">
+      {seo}
       <div className="mb-8">
         <h1 className="text-4xl font-black text-white mb-2">Tools</h1>
         <p className="text-slate-400">Product management canvases to speed up your workflow</p>

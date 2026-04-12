@@ -6,6 +6,7 @@ import type { InterviewQuestion } from '../lib/database.types';
 import MockInterviewModal from '../components/MockInterviewModal';
 import UpgradeModal from '../components/UpgradeModal';
 import { useInterviewUsage } from '../hooks/useInterviewUsage';
+import SEOHead from '../components/SEOHead';
 
 interface ParsedQuestion {
   question: string;
@@ -48,6 +49,25 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
     questionIndex: 0
   });
   const [isOpeningInterview, setIsOpeningInterview] = useState(false);
+
+  const seo = (
+    <SEOHead
+      title="AI Mock Interview Practice — Speak & Get Instant PM Feedback | ProductTasks"
+      description="Practice PM interview questions with AI feedback on clarity, structure, and product sense. Start mock interviews, track usage, and improve faster."
+      canonical="https://producttasks.com/dashboard/interview"
+      keywords={['AI mock interview', 'PM interview questions', 'product management practice']}
+      structuredData={{
+        '@context': 'https://schema.org',
+        '@type': 'Course',
+        'name': 'Product Management Interview Question Bank',
+        'description': 'Browse 600+ PM interview questions by category and practice with AI-powered mock interviews.',
+        'provider': {
+          '@type': 'Organization',
+          'name': 'ProductTasks'
+        }
+      }}
+    />
+  );
 
   const categoryGradients = {
     'Product Design': 'from-blue-500 to-cyan-500',
@@ -228,7 +248,8 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <main className="p-8">
+        {seo}
         <div className="text-center py-20">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-cyan-400 border-r-transparent"></div>
           <p className="mt-4 text-slate-600 dark:text-slate-400">Loading interview questions...</p>
@@ -238,7 +259,8 @@ export default function Interview({ onNavigateToCategory }: InterviewProps) {
   }
 
   return (
-    <div className="p-8">
+    <main className="p-8">
+      {seo}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
           <div>

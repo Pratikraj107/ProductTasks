@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { UserPlus, Rocket, CheckCircle2 /* , Smartphone */ } from 'lucide-react';
+import SEOHead from '../components/SEOHead';
 // import MobileAuthForm from '../components/MobileAuth/MobileAuthForm'; // uncomment when re-enabling phone signup
 
 type SignUpTab = 'email' | 'phone';
@@ -20,6 +21,15 @@ export default function SignUp({ onNavigate }: SignUpProps) {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { user, signUp, signInWithGoogle } = useAuth();
+
+  const seo = (
+    <SEOHead
+      title="Sign Up Free — Start Practicing PM Interviews Today | ProductTasks"
+      description="Create your free ProductTasks account and start practicing product management interview questions with AI feedback, progress tracking, and more."
+      canonical="https://producttasks.com/signup"
+      keywords={['sign up', 'product manager signup', 'PM interview practice']}
+    />
+  );
 
   useEffect(() => {
     if (user) onNavigate?.('/dashboard');
@@ -63,7 +73,8 @@ export default function SignUp({ onNavigate }: SignUpProps) {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden relative flex items-center justify-center px-4 py-12">
+      <main className="min-h-screen bg-slate-950 text-white overflow-x-hidden relative flex items-center justify-center px-4 py-12">
+        {seo}
         <div className="fixed inset-0 z-0">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-950 to-slate-950"></div>
           <div
@@ -130,7 +141,8 @@ export default function SignUp({ onNavigate }: SignUpProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden relative flex items-center justify-center px-4 py-12">
+    <main className="min-h-screen bg-slate-950 text-white overflow-x-hidden relative flex items-center justify-center px-4 py-12">
+      {seo}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-slate-950 to-slate-950"></div>
         <div

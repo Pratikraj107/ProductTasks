@@ -180,6 +180,7 @@ export default function AdminLayout({ onNavigate }: AdminLayoutProps) {
           <div className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 p-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
               className="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             >
               {sidebarOpen ? (
@@ -196,6 +197,7 @@ export default function AdminLayout({ onNavigate }: AdminLayoutProps) {
           <div className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 p-4">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
               className="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             >
               {sidebarOpen ? (
